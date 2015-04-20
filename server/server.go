@@ -18,6 +18,7 @@ func StartMQServer(server string, port int) error {
 	mqrpc := NewRPC(&ServerConfig{server, port, "Master"})
 	rpc.Register(mqrpc)
 	l, e := net.Listen("tcp", ":"+strconv.Itoa(port))
+	defer l.Close()
 	if e != nil {
 		return e
 	}
@@ -26,11 +27,10 @@ func StartMQServer(server string, port int) error {
 		if e != nil {
 			return e
 		}
-		if conn != nil {
-			go func(c net.Conn) {
-				defer c.Close()
-				rpc.ServeConn(c)
-			}(conn)
-		}
+		go func(c net.Conn) {
+			defer c.Close()
+			rpc.ServeConn(c)
+		}(conn)
 	}
+	return nil
 }

@@ -19,9 +19,10 @@ type Node struct {
 }
 
 type MqRPC struct {
-	items  map[string]MqMsg
-	Config *ServerConfig
-	Host   *ServerConfig
+	dataMap map[string]int
+	items   map[string]MqMsg
+	Config  *ServerConfig
+	Host    *ServerConfig
 
 	nodes []Node
 	exit  bool
@@ -124,7 +125,18 @@ func (r *MqRPC) GetLog(key time.Time, result *MqMsg) error {
 }
 
 func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
-	r.items[value.Key] = value
+	msg := MqMsg{}
+	_, e := r.items[value.Key]
+	if e == true {
+		msg = r.items[value.Key]
+	} else {
+		msg.Key = value.Key
+	}
+	msg.Value = value.Value
+	msg.LastAccess = time.Now()
+	r.items[value.Key] = msg
+
+	*result = msg
 	return nil
 }
 
@@ -134,5 +146,13 @@ func (r *MqRPC) Get(key string, result *MqMsg) error {
 		return errors.New("Data for key " + key + " is not exist")
 	}
 	*result = v
+	return nil
+}
+
+func (r *MqRPC) Delete(key string, result *MqMsg) error {
+	v, e := r.items[key]
+	if e == true {
+		delete(r.items, key)
+	}
 	return nil
 }
