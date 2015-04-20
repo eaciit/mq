@@ -3,7 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/server"
+	"strings"
+	"time"
 )
 
 func main() {
@@ -22,11 +25,27 @@ func main() {
 		}
 	}()
 
+	time.Sleep(10)
+	c, e := NewMqClient("127.0.0.1:7890", time.Second*10)
+	if e != nil {
+		fmt.Println("Error: ", e.Error())
+		return
+	}
 	status := ""
+	t0 := time.Now()
 	for status == "" {
-		select {
-		case status = <-startStatus:
-			fmt.Println(status)
+		s, e := c.CallString("GetLog", t0)
+		if e != nil {
+			fmt.Println("Error: ", e.Error())
+			status = "exit"
+		} else {
+			if s != "" {
+				fmt.Println(s)
+			}
+			if strings.Contains(s, "EXIT") {
+				status = "exit"
+			}
 		}
+		t0 = time.Now()
 	}
 }
