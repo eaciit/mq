@@ -27,9 +27,11 @@ func main() {
 
 		if command == "exit" {
 			status = "exit"
+			c.Close()
 		} else if command == "kill" {
 			c.CallString("Kill", "")
 			status = "exit"
+			c.Close()
 		} else if command == "ping" {
 			s, e := c.CallString("Ping", "")
 			handleError(e)

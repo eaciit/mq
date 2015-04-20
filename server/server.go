@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/gob"
 	"net"
 	"net/rpc"
 	"strconv"
@@ -12,7 +13,8 @@ type ServerConfig struct {
 	Role string
 }
 
-func StartMQServer(server string, port int, mqexit chan string) error {
+func StartMQServer(server string, port int) error {
+	gob.Register(ServerConfig{})
 	mqrpc := NewRPC(&ServerConfig{server, port, "Master"})
 	rpc.Register(mqrpc)
 	l, e := net.Listen("tcp", ":"+strconv.Itoa(port))
@@ -22,9 +24,13 @@ func StartMQServer(server string, port int, mqexit chan string) error {
 	for {
 		conn, e := l.Accept()
 		if e != nil {
-			mqexit <- e.Error()
-		} else {
-			go rpc.ServeConn(conn)
+			return e
+		}
+		if conn != nil {
+			go func(c net.Conn) {
+				defer c.Close()
+				rpc.ServeConn(c)
+			}(conn)
 		}
 	}
 }

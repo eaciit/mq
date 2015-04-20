@@ -21,6 +21,10 @@ func NewMqClient(dsn string, timeout time.Duration) (*MqClient, error) {
 	return &MqClient{rpcClient}, nil
 }
 
+func (c *MqClient) Close() {
+	c.connection.Close()
+}
+
 func (c *MqClient) Call(op string, key interface{}) (*msg.MqMsg, error) {
 	result := msg.MqMsg{}
 	err := c.connection.Call("MqRPC."+op, key, &result)
