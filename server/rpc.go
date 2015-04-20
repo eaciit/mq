@@ -42,9 +42,10 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 
 func (r *MqRPC) Ping(key string, result *MqMsg) error {
 	pingInfo := fmt.Sprintf("Server is running on port %s\n", Itoa(r.Config.Port))
-	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Active \t\t\t| Data# \t\t\t| Data(MB) \n")
+	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| Data# \t\t\t| Data(MB) \n")
 	for i, n := range r.nodes {
-		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %v \t\t\t| %d \t\t\t| %d \n", i, n.Config.Name, n.Config.Port,
+		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %d \n", i, n.Config.Name, n.Config.Port,
+			n.Config.Role,
 			n.ActiveDuration(), n.DataCount, (n.DataSize/1024/1024))
 	}
 	(*result).Value = pingInfo
@@ -119,5 +120,19 @@ func (r *MqRPC) GetLog(key time.Time, result *MqMsg) error {
 	} else {
 		(*result).Value = ""
 	}
+	return nil
+}
+
+func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
+	r.items[value.Key] = value
+	return nil
+}
+
+func (r *MqRPC) Get(key string, result *MqMsg) error {
+	v, e := r.items[key]
+	if e == false {
+		return errors.New("Data for key " + key + " is not exist")
+	}
+	*result = v
 	return nil
 }

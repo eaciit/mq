@@ -5,6 +5,7 @@ import (
 	"fmt"
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/server"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +13,8 @@ import (
 
 func main() {
 	var e error
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	portFlag := flag.Int("port", 7890, "Port of RCP call. Default is 7890")
 	hostFlag := flag.String("master", "", "Master host. Default is localhost:7890")
 	flag.Parse()

@@ -5,7 +5,7 @@ import (
 )
 
 type MqMsg struct {
-	MsgType    string
+	Key        string
 	Value      interface{}
 	Created    time.Time
 	LastAccess time.Time
