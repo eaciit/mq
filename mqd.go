@@ -19,7 +19,7 @@ func main() {
 	hostFlag := flag.String("master", "", "Master host. Default is localhost:7890")
 	flag.Parse()
 
-	hostName := ""
+	hostName := "127.0.0.1"
 	hostPort := 7890
 	if *hostFlag != "" {
 		hostParts := strings.Split(*hostFlag, ":")
@@ -39,7 +39,7 @@ func main() {
 	startStatus := make(chan string)
 	fmt.Printf("Starting MQ server at port %d \n", *portFlag)
 	go func() {
-		e = StartMQServer("", *portFlag)
+		e = StartMQServer("127.0.0.1",*portFlag)
 		if e != nil {
 			//panic("Unable to start server: " + e.Error())
 			startStatus <- fmt.Sprintf("\nUnable to start service : %s \n", e.Error())
@@ -64,13 +64,13 @@ func main() {
 		}
 		s, e := NewMqClient(fmt.Sprintf("%s:%d", hostName, hostPort), time.Second*10)
 		if e != nil {
-			panic("Unable to connect to master server : " + e.Error())
+			fmt.Printf("Unable to connect to master server %s:%d : %s \n", hostName, hostPort, e.Error())
 			return
 		}
 		defer s.Close()
 		_, e = s.Call("AddNode", cfg.Value.(ServerConfig))
 		if e != nil {
-			panic("Unable to set as node : " + e.Error())
+			fmt.Printf("Unable to set as node : %s", e.Error())
 			return
 		}
 	}

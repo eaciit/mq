@@ -74,7 +74,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	//- check the server
 	client, e := NewMqClient(fmt.Sprintf("%s:%d", nodeConfig.Name, nodeConfig.Port), 10*time.Second)
 	if e != nil {
-		return errors.New("Unable to add node. Could not connect")
+		return errors.New(fmt.Sprintf("Unable to add node. Could not connect to %s:%d\n", nodeConfig.Name, nodeConfig.Port))
 	}
 	_, e = client.Call("SetSlave", nodeConfig)
 	if e != nil {
