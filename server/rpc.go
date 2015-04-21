@@ -1,21 +1,23 @@
 package server
 
 import (
-	"strconv"
+	"bytes"
+	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
-	"encoding/json"
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/msg"
+	"strconv"
+	"time"
 )
 
 type Node struct {
 	Config    *ServerConfig
 	DataCount int64
 	DataSize  int64
-	Client    *MqClient
 
+	client    *MqClient
 	startTime time.Time
 }
 
@@ -31,6 +33,16 @@ type MqRPC struct {
 
 func (n *Node) ActiveDuration() time.Duration {
 	return time.Since(n.startTime)
+}
+
+func Encode(obj interface{}) (*bytes.Buffer, error) {
+	buf := new(bytes.Buffer)
+	gw := gob.NewEncoder(buf)
+	err := gw.Encode(obj)
+	if err != nil {
+		return buf, err
+	}
+	return buf, nil
 }
 
 func NewRPC(cfg *ServerConfig) *MqRPC {
@@ -58,6 +70,12 @@ func (r *MqRPC) AllNode(key string, result *MqMsg) error {
 	value, _ := json.Marshal(r.nodes)
 	result.Value = value
 	return nil
+}
+
+func (r *MqRPC) Nodes(key string, result *MqMsg) error {
+	buf, e := Encode(r.nodes)
+	result.Value = buf.Bytes()
+	return e
 }
 
 func (r *MqRPC) findNode(serverName string, port int) (int, Node) {
@@ -93,7 +111,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	newNode.Config = nodeConfig
 	newNode.DataCount = 0
 	newNode.DataSize = 0
-	newNode.Client = client
+	newNode.client = client
 	newNode.startTime = time.Now()
 	r.nodes = append(r.nodes, newNode)
 	return nil
@@ -114,7 +132,7 @@ func (r *MqRPC) SetSlave(config *ServerConfig, result *MqMsg) error {
 func (r *MqRPC) Kill(key string, result *MqMsg) error {
 	for _, n := range r.nodes {
 		if n.Config.Role != "Master" {
-			n.Client.Call("Kill", "")
+			n.client.Call("Kill", "")
 		}
 	}
 	r.exit = true

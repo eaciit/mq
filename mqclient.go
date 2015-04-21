@@ -5,6 +5,7 @@ import (
 	"fmt"
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/msg"
+	. "github.com/eaciit/mq/server"
 	"os"
 	"runtime"
 	"strings"
@@ -41,6 +42,11 @@ func main() {
 			s, e := c.CallString("Ping", "")
 			handleError(e)
 			fmt.Printf(s)
+		} else if lowerCommand == "nodes" {
+			results := []Node{}
+			e := c.CallDecode("Nodes", "", &results)
+			handleError(e)
+			fmt.Printf("%v\n", results)
 		} else if strings.HasPrefix(lowerCommand, "set") {
 			//--- this to handle set command
 			commandParts := strings.Split(command, " ")
