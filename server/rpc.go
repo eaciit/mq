@@ -150,7 +150,7 @@ func (r *MqRPC) Get(key string, result *MqMsg) error {
 }
 
 func (r *MqRPC) Delete(key string, result *MqMsg) error {
-	v, e := r.items[key]
+	_, e := r.items[key]
 	if e == true {
 		delete(r.items, key)
 	}
