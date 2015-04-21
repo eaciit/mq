@@ -54,6 +54,12 @@ func (r *MqRPC) Ping(key string, result *MqMsg) error {
 	return nil
 }
 
+func (r *MqRPC) AllNode(key string, result *MqMsg) error {
+	value, _ := json.Marshal(r.nodes)
+	result.Value = value
+	return nil
+}
+
 func (r *MqRPC) findNode(serverName string, port int) (int, Node) {
 	found := false
 	for i := 0; i < len(r.nodes) && !found; i++ {
