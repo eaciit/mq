@@ -1,17 +1,14 @@
 package client
 
 import (
-	//"net"
-	"github.com/eaciit/mq/msg"
-	"net/rpc"
 	"time"
+	"net/rpc"
+	. "github.com/eaciit/mq/msg"
 )
 
-type (
-	MqClient struct {
-		connection *rpc.Client
-	}
-)
+type MqClient struct {
+	connection *rpc.Client
+}
 
 func NewMqClient(dsn string, timeout time.Duration) (*MqClient, error) {
 	rpcClient, err := rpc.Dial("tcp", dsn)
@@ -25,14 +22,14 @@ func (c *MqClient) Close() {
 	c.connection.Close()
 }
 
-func (c *MqClient) Call(op string, key interface{}) (*msg.MqMsg, error) {
-	result := msg.MqMsg{}
+func (c *MqClient) Call(op string, key interface{}) (*MqMsg, error) {
+	result := MqMsg{}
 	err := c.connection.Call("MqRPC."+op, key, &result)
 	return &result, err
 }
 
 func (c *MqClient) CallString(op string, key interface{}) (string, error) {
-	result := msg.MqMsg{}
+	result := MqMsg{}
 	err := c.connection.Call("MqRPC."+op, key, &result)
 	if err != nil {
 		return "", err

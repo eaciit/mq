@@ -1,12 +1,13 @@
 package server
 
 import (
+	"strconv"
 	"errors"
 	"fmt"
+	"time"
+	"encoding/json"
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/msg"
-	. "strconv"
-	"time"
 )
 
 type Node struct {
@@ -42,7 +43,7 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 }
 
 func (r *MqRPC) Ping(key string, result *MqMsg) error {
-	pingInfo := fmt.Sprintf("Server is running on port %s\n", Itoa(r.Config.Port))
+	pingInfo := fmt.Sprintf("Server is running on port %s\n", strconv.Itoa(r.Config.Port))
 	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| Data# \t\t\t| Data(MB) \n")
 	for i, n := range r.nodes {
 		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %d \n", i, n.Config.Name, n.Config.Port,
