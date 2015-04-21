@@ -1,0 +1,19 @@
+.page-header {
+	position: relative;
+}
+
+.page-header .btn-upload {
+	position: absolute;
+	bottom: 19px;
+	right: 0px;
+}
+
+.main {
+	margin: 0px auto;
+	width: 60%;
+}
+
+.loader {
+	text-align: center;
+	display: none;
+}
