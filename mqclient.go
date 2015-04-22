@@ -19,6 +19,10 @@ func main() {
 	c, e := NewMqClient("127.0.0.1:7890", time.Second*10)
 	handleError(e)
 	fmt.Println("Connected to RPC Server")
+
+	msg := MqMsg{Key: "INFO", Value: "New Client Connected"}
+	c.CallToLog("SetLog", msg)
+	
 	r := bufio.NewReader(os.Stdin)
 
 	status := ""
@@ -58,7 +62,7 @@ func main() {
 				fmt.Println("Unable to store message: " + e.Error())
 			}
 		} else if strings.HasPrefix(lowerCommand, "get") {
-			//--- this to handle set command
+			//--- this to handle get command
 			commandParts := strings.Split(command, " ")
 			key := commandParts[1]
 			msg, e := c.Call("Get", key)
@@ -67,6 +71,16 @@ func main() {
 			} else {
 				fmt.Printf("Value: %v \n", msg.Value)
 			}
+		} else {
+			errorMsg := "Unable to find command "+command
+			//c.CallToLog(errorMsg,"ERROR")
+			msg := MqMsg{Key: "ERROR", Value: errorMsg}
+			_, e := c.CallToLog("SetLog", msg)
+			if e != nil {
+				fmt.Println("Unable to store message: " + e.Error())
+			}
+
+			fmt.Println(errorMsg)
 		}
 	}
 }
