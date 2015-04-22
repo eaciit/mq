@@ -20,12 +20,16 @@ body {
       padding-top: 6px;
       padding-left: 5px;
       color: #5F5F5F; }
-  body .main .section .panel-heading {
-    text-align: center; }
-    body .main .section .panel-heading .fa {
-      margin-right: 3px; }
+  body .main .section .panel {
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px; }
+    body .main .section .panel .panel-heading {
+      text-align: center; }
+      body .main .section .panel .panel-heading .fa {
+        margin-right: 3px; }
   body .main .section .panel-body {
-    background-color: #ebeef0; }
+    background-color: #ebeef0;
+    min-height: 430px; }
 
 .loader {
   text-align: center;
