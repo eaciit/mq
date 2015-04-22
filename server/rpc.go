@@ -16,7 +16,7 @@ type Node struct {
 	DataSize  int64
 
 	client    *MqClient
-	startTime time.Time
+	StartTime time.Time
 }
 
 type MqRPC struct {
@@ -30,7 +30,7 @@ type MqRPC struct {
 }
 
 func (n *Node) ActiveDuration() time.Duration {
-	return time.Since(n.startTime)
+	return time.Since(n.StartTime)
 }
 
 func NewRPC(cfg *ServerConfig) *MqRPC {
@@ -94,7 +94,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	newNode.DataCount = 0
 	newNode.DataSize = 0
 	newNode.client = client
-	newNode.startTime = time.Now()
+	newNode.StartTime = time.Now()
 	r.nodes = append(r.nodes, newNode)
 	return nil
 }

@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -17,23 +16,38 @@ type MqMonitor struct {
 }
 
 func (m *MqMonitor) Start() {
-	client, e := NewMqClient("127.0.0.1:7890", time.Second*10)
-	handleError(e)
+	client, err := NewMqClient("127.0.0.1:7890", time.Second*10)
+	handleError(err)
 
-	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(getView("assets")))))
+	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView("mqmonitor/web/assets")))))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		t, _ := template.ParseFiles(getView("views/index.gtpl"))
+		t, _ := template.ParseFiles(GetView("mqmonitor/web/views/index.gtpl"))
 		t.Execute(w, nil)
 	})
 
-	http.HandleFunc("/nodes", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/data/nodes", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
 
 		if r.Method == "GET" {
-			nodes := getNodes(client)
+			var nodes []Node
+			client.CallDecode("Nodes", "", &nodes)
 
-			PrintJSON(w, true, nodes, "")
+			result := make([]map[string]interface{}, len(nodes))
+
+			for i, node := range nodes {
+				result[i] = map[string]interface{}{
+					"ConfigName": node.Config.Name,
+					"ConfigPort": node.Config.Port,
+					"ConfigRole": node.Config.Role,
+					"DataCount":  node.DataCount,
+					"DataSize":   node.DataSize,
+					"StartTime":  node.StartTime.Format("2006-01-02 15:04"),
+					"Duration":   FormatDuration(node.StartTime),
+				}
+			}
+
+			PrintJSON(w, true, result, "")
 			return
 		}
 
@@ -41,20 +55,6 @@ func (m *MqMonitor) Start() {
 	})
 
 	http.ListenAndServe(fmt.Sprintf(":%d", m.port), nil)
-}
-
-func getView(view string) string {
-	cwd, _ := os.Getwd()
-	return filepath.Join(cwd, "mqmonitor/web", view)
-}
-
-func getNodes(client *MqClient) []Node {
-	var nodes []Node
-
-	err := client.CallDecode("Nodes", "", &nodes)
-	handleError(err)
-
-	return nodes
 }
 
 func handleError(e error) {

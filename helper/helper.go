@@ -5,7 +5,11 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 func Decode(bytesData []byte, result interface{}) error {
@@ -45,4 +49,17 @@ func PrintJSON(w http.ResponseWriter, success bool, data interface{}, message st
 
 		fmt.Fprintf(w, "%s\n", result)
 	}
+}
+
+func GetView(view string) string {
+	cwd, _ := os.Getwd()
+	return filepath.Join(cwd, view)
+}
+
+func FormatDuration(start time.Time) string {
+	duration := time.Since(start)
+	hours := int(math.Floor(duration.Hours()))
+	minutes := int(math.Floor(math.Mod(duration.Minutes(), 60)))
+	seconds := int(math.Floor(math.Mod(math.Mod(duration.Seconds(), 3600), 60)))
+	return fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
 }

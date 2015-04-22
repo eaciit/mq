@@ -1,19 +1,49 @@
-.page-header {
-	position: relative;
-}
-
-.page-header .btn-upload {
-	position: absolute;
-	bottom: 19px;
-	right: 0px;
-}
-
-.main {
-	margin: 0px auto;
-	width: 60%;
-}
+body {
+  background-color: #f3f3f3; }
+  body .main .page-header {
+    position: relative;
+    margin: 0px 0px 15px;
+    padding: 20px;
+    background-color: white;
+    border-bottom: 1px solid #ccc;
+    -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+    body .main .page-header .logo {
+      height: 40px; }
+    body .main .page-header h1 {
+      margin: 0px;
+      padding: 0px;
+      font-family: "Open Sans";
+      font-weight: normal;
+      font-size: 24px;
+      padding-top: 6px;
+      padding-left: 5px;
+      color: #5F5F5F; }
+  body .main .section .panel-heading {
+    text-align: center; }
+    body .main .section .panel-heading .fa {
+      margin-right: 3px; }
+  body .main .section .panel-body {
+    background-color: #ebeef0; }
 
 .loader {
-	text-align: center;
-	display: none;
-}
+  text-align: center;
+  display: none; }
+
+.no-padding {
+  padding: 0px !important; }
+
+.no-margin {
+  margin: 0px !important; }
+
+.k-grid {
+  font-size: 80%; }
+  .k-grid thead.k-grid-header tr th[role=columnheader][data-colspan],
+  .k-grid thead.k-grid-header tr th[data-field=DataCount],
+  .k-grid thead.k-grid-header tr th[data-field=DataSize],
+  .k-grid thead.k-grid-header tr th[data-field=StartTime],
+  .k-grid thead.k-grid-header tr th[data-field=Duration] {
+    text-align: center; }
+
+/*# sourceMappingURL=main.css.map */
