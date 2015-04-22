@@ -1,12 +1,10 @@
 package server
 
 import (
-	"bytes"
-	"encoding/gob"
-	"encoding/json"
 	"errors"
 	"fmt"
 	. "github.com/eaciit/mq/client"
+	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
 	"strconv"
 	"time"
@@ -35,16 +33,6 @@ func (n *Node) ActiveDuration() time.Duration {
 	return time.Since(n.startTime)
 }
 
-func Encode(obj interface{}) (*bytes.Buffer, error) {
-	buf := new(bytes.Buffer)
-	gw := gob.NewEncoder(buf)
-	err := gw.Encode(obj)
-	if err != nil {
-		return buf, err
-	}
-	return buf, nil
-}
-
 func NewRPC(cfg *ServerConfig) *MqRPC {
 	m := new(MqRPC)
 	m.Config = cfg
@@ -63,12 +51,6 @@ func (r *MqRPC) Ping(key string, result *MqMsg) error {
 			n.ActiveDuration(), n.DataCount, (n.DataSize/1024/1024))
 	}
 	(*result).Value = pingInfo
-	return nil
-}
-
-func (r *MqRPC) AllNode(key string, result *MqMsg) error {
-	value, _ := json.Marshal(r.nodes)
-	result.Value = value
 	return nil
 }
 

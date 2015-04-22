@@ -1,8 +1,7 @@
 package client
 
 import (
-	"bytes"
-	"encoding/gob"
+	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
 	"net/rpc"
 	"time"
@@ -10,13 +9,6 @@ import (
 
 type MqClient struct {
 	connection *rpc.Client
-}
-
-func Decode(bytesData []byte, result interface{}) error {
-	buf := bytes.NewBuffer(bytesData)
-	dec := gob.NewDecoder(buf)
-	e := dec.Decode(result)
-	return e
 }
 
 func NewMqClient(dsn string, timeout time.Duration) (*MqClient, error) {
