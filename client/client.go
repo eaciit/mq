@@ -55,3 +55,10 @@ func (c *MqClient) CallString(op string, key interface{}) (string, error) {
 	}
 	return result.Value.(string), nil
 }
+
+func (c *MqClient) CallToLog(op string, key interface{}) (*MqMsg, error) {
+	result := MqMsg{}
+	err := c.connection.Call("MqRPC."+op, key, &result)
+	return &result, err
+}
+
