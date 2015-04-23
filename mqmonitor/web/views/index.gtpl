@@ -48,10 +48,10 @@
 			</div>
 
 			<div class="col-md-12">
-				<div class="col-md-6 section section-nodes">
+				<div class="col-md-6 section section-nodes-grid">
 					<div class="panel panel-primary">
 						<div class="panel-heading">
-							<i class="fa fa-cogs"></i> Nodes Grid Information
+							<i class="fa fa-cogs"></i> Nodes Information
 						</div>
 						<div class="panel-body">
 							<div class="grid"></div>
@@ -59,16 +59,35 @@
 					</div>
 				</div>
 
-				<div class="col-md-6 section section-nodes">
+				<div class="col-md-6 section section-nodes-chart">
 					<div class="panel panel-primary">
 						<div class="panel-heading">
-							<i class="fa fa-line-chart"></i> Nodes Graph Information
+							<i class="fa fa-bar-chart-o"></i> Nodes Information
 						</div>
 						<div class="panel-body">
 							<div class="chart"></div>
 						</div>
 					</div>
 				</div>
+
+				<div class="col-md-6 section section-items-grid">
+					<div class="panel panel-primary">
+						<div class="panel-heading">
+							<i class="fa fa-files-o"></i> Items Information
+						</div>
+						<div class="panel-body">
+							<div class="row no-margin selector">
+								<label>Pick Nodes :</label>
+								<select class="nodes" style="width: 200px"></select>
+							</div>
+							<div class="row no-padding no-margin">
+								<div class="grid"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="clearfix"></div>
 			</div>
 
 			<div class="loader">

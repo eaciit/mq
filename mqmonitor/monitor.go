@@ -129,6 +129,13 @@ func (m *MqMonitor) Start() {
 		PrintJSON(w, false, "", "Bad Request")
 	})
 
+	http.HandleFunc("/data/nodes/items", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "application/json")
+		r.ParseForm()
+
+		PrintJSON(w, true, make([]interface{}, 0), "")
+	})
+
 	http.ListenAndServe(fmt.Sprintf(":%d", m.port), nil)
 }
 

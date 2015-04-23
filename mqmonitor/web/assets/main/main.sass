@@ -17,11 +17,7 @@
 .no-margin
 	margin: 0px !important
 
-// kendo hack
-
 .k-grid
-	font-size: 80%
-	
 	thead.k-grid-header
 		tr
 			th[role=columnheader][data-colspan], 
@@ -34,6 +30,7 @@
 // backbone
 
 body
+	font-size: 12px
 	background-color: #ebeef0 // #f3f3f3
 
 	.main
@@ -59,6 +56,13 @@ body
 				color: #5F5F5F
 
 		.section
+			&.section-items-grid
+				.selector
+					padding-bottom: 15px
+
+					label
+						font-weight: normal
+
 			.panel
 				border-bottom-left-radius: 0px
 				border-bottom-right-radius: 0px

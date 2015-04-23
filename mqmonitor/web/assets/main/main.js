@@ -4,8 +4,9 @@
 	var Main = function () { 
 		var self = this;
 		var $body = $('body');
-		var $sectionNodes = $body.find('.section-nodes');
-		var ajaxPullInterval = {};
+		var $sectionNodesGrid = $body.find('.section-nodes-grid');
+		var $sectionNodesChart = $body.find('.section-nodes-chart');
+		var $sectionItemsGrid = $body.find('.section-items-grid');
 		var windowResizeTimeout = setTimeout(function () {}, 0);
 		var $window = $(window);
 		var isServerAlive = true;
@@ -13,7 +14,7 @@
 		var notifyDelay = 5;
 
 		// register ajax pull, to make grid shows realtime data
-		var registerAjaxPullFor = function (what, data, success, error) {
+		var registerAjaxPullFor = function (what, data, success, error, after) {
 			var doRequest = function () {
 				$.ajax({
 					url: '/data/' + what,
@@ -25,10 +26,8 @@
 				.error(error);
 			};
 
-			ajaxPullInterval['section-' + what.replace(/\//g, '-')] = setInterval(
-				doRequest, 
-				ajaxPullDelay * 1000
-			);
+			if (typeof after !== String(undefined))
+				after(doRequest);
 
 			doRequest();
 		};
@@ -43,11 +42,8 @@
 				toastr['error']('data refreshed every ' + ajaxPullDelay + ' seconds');
 			}, 1000 * 60 * notifyDelay);
 
-			// prepare section nodes grid
-			$sectionNodes.find('.grid').kendoGrid({
-				chartArea: {
-					background: 'transparent'
-				},
+			// prepare section nodes, grid
+			$sectionNodesGrid.find('.grid').kendoGrid({
 				dataSource: { 
 					data: [], 
 					pageSize: 5 
@@ -59,8 +55,7 @@
 				scrollable: false,
 				columns: [
 					{ title: 'Configuration', columns: [
-						{ field: 'ConfigName', title: 'Host', width: 110,
-							template: '#: ConfigName #:#: ConfigPort #' },
+						{ field: 'ConfigHost', title: 'Host', width: 110 },
 						{ field: 'ConfigRole', title: 'Role', width: 90 }
 					] },
 					{ title: 'Data', columns: [
@@ -83,8 +78,8 @@
 				}
 			});
 
-			// prepare chart
-			$sectionNodes.find('.chart').kendoChart({
+			// prepare section nodes, chart
+			$sectionNodesChart.find('.chart').kendoChart({
 				chartArea: {
 					background: 'transparent'
 				},
@@ -146,6 +141,62 @@
 					position: 'bottom'
 				}
 			});
+
+			// prepare section items, grid
+			$sectionItemsGrid.find('.grid').kendoGrid({
+				dataSource: { 
+					data: [], 
+					pageSize: 10
+				},
+				pageable: {
+					pageSizes: [5, 10, 15]
+				},
+				sortable: true, 
+				scrollable: false,
+				columns: [
+					{ field: 'key', title: 'Key', width: 110 },
+					{ field: 'value', title: 'Value', width: 200 },
+					{ field: 'created', title: 'Created', width: 80 },
+					{ field: 'expiry', title: 'Expiry', width: 80 },
+				]
+			});
+			
+			// prepare section items, node selection
+			$sectionItemsGrid.find('select.nodes').kendoDropDownList({
+				dataSource: { 
+					data: [
+						{ text: 'Select one ...', value: '' }
+					]
+				},
+				dataTextField: 'text',
+				dataValueField: 'value',
+				select: function (e) {
+					var value = $sectionItemsGrid.find('select.nodes').data('kendoDropDownList').value();
+					var valueComp = String(value).split(':');
+
+					if (valueComp.length === 0)
+						return;
+
+					registerAjaxPullFor('nodes/items', {
+						host: valueComp[0],
+						port: valueComp[1]
+					}, function (res) {
+						res = rez
+
+						if (!res.success) {
+							return;
+						}
+
+						var $grid = $sectionItemsGrid.find('.grid').data('kendoGrid');
+						$grid.setDataSource(new kendo.data.DataSource({
+							data: res.data,
+							pageSize: $grid.dataSource.pageSize()
+						}));
+					}, function () {
+						toastr["error"]("Error occured when fetching items data for selected node")
+					});
+				}
+			});
 		};
 
 		// register ajax pull, 
@@ -172,17 +223,23 @@
 					toastr["success"]("connected to server");
 				}
 
-				var $grid = $sectionNodes.find('.grid').data('kendoGrid');
-				var $chart = $sectionNodes.find('.chart').data('kendoChart');
+				var $nodeGrid = $sectionNodesGrid.find('.grid').data('kendoGrid');
+				var $nodeChart = $sectionNodesChart.find('.chart').data('kendoChart');
+				var $itemNodeSelect = $sectionItemsGrid.find('select.nodes').data('kendoDropDownList');
 
-				$grid.setDataSource(new kendo.data.DataSource({
-					data: Lazy(res.data.grid).sortBy(function (d) { return -d.StartTime; }).toArray(),
-					pageSize: $grid.dataSource.pageSize()
+				$nodeGrid.setDataSource(new kendo.data.DataSource({
+					data: Lazy(res.data.grid).map(function (d) {
+						d.ConfigHost = (d.ConfigName + ':' + d.ConfigPort);
+						return d;
+					}).sortBy(function (d) { 
+						return -d.StartTime; 
+					}).toArray(),
+					pageSize: $nodeGrid.dataSource.pageSize()
 				}));
 
 				// get max value of each series,
 				// then use it as valueAxis.max of each series
-				Lazy($chart.options.valueAxis).each(function(v) {
+				Lazy($nodeChart.options.valueAxis).each(function(v) {
 					var max = Lazy(res.data.chart).max(function (d) {
 						return parseInt(d[v.name], 10)
 					})[v.name];
@@ -191,13 +248,39 @@
 				});
 
 				// sort data using time ascending
-				$chart.setDataSource(new kendo.data.DataSource({
-					data: Lazy(res.data.chart).sortBy(function (d) { return d.TimeInt; }).toArray()
+				$nodeChart.setDataSource(new kendo.data.DataSource({
+					data: Lazy(res.data.chart).sortBy(function (d) { 
+						return d.TimeInt; 
+					}).toArray()
 				}));
 
-				$chart.redraw();
+				$nodeChart.redraw();
+
+				// pupulate nodes data as options in item section
+				$itemNodeSelect.setDataSource({
+					data: Lazy(res.data.grid).where(function (d) {
+						return (d.ConfigRole !== 'Master');
+					}).map(function (d) {
+						var host = (d.ConfigName + ':' + d.ConfigPort);
+
+						return { 
+							value: host, 
+							text: (host + ' (' + d.ConfigRole + ')') 
+						};
+					}).sortBy(function (d) { 
+						return d.TimeInt; 
+					}).toArray()
+				});
+
+				// populate to nodes for the first time
+				if (!$('select.nodes').hasClass('first-load')) {
+					$('select.nodes').data('kendoDropDownList').options.select();
+					$('select.nodes').addClass('first-load');
+				}
 			}, function (a, b, c) {
 				toastr["error"]("Error occured when fetching data for nodes")
+			}, function (doRequest) {
+				setInterval(doRequest, ajaxPullDelay * 1000);
 			});
 		};
 
@@ -211,7 +294,7 @@
 				windowResizeTimeout = setTimeout(function () {
 
 					// redraw chart
-					$sectionNodes.find('.chart').data('kendoChart').redraw();
+					$sectionNodesChart.find('.chart').data('kendoChart').redraw();
 				}, 500);
 			});
 		};
@@ -225,3 +308,14 @@
 		main.registerEventListener();
 	});
 }());
+
+
+var rez = {
+	success: true,
+	data: [
+		{ key: 'name', value: 'noval', created: '12-12-2015', expiry: '6m 2s' },
+		{ key: 'name', value: 'agung', created: '08-11-2015', expiry: '9m 12s' },
+		{ key: 'name', value: 'prayogo', created: '10-10-2015', expiry: '12m 12s' }
+	]
+}
+
