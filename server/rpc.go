@@ -6,6 +6,7 @@ import (
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -155,6 +156,29 @@ func (r *MqRPC) GetLogData(value MqMsg, result *MqMsg) error {
 }
 
 func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
+
+	//r.GetMinNode()
+	var countNd int64 // := r.nodes[0].DataCount
+	//var nd Node       //:= r.nodes[0]
+	var idx int
+	for i := 0; i < len(r.nodes); i++ {
+		if i == 0 {
+			//nd = r.nodes[0]
+			countNd = r.nodes[0].DataCount
+			idx = 0
+		} else {
+			if countNd > r.nodes[i].DataCount {
+				//nd = r.nodes[i]
+				countNd = r.nodes[i].DataCount
+				idx = i
+			}
+		}
+	}
+	fmt.Println(r.nodes[idx].Config.Name, r.nodes[idx].Config.Port, r.nodes[idx].DataSize, r.nodes[idx].DataCount)
+	g := r.nodes[idx].DataCount
+	reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
+	fmt.Println(r.nodes[idx].Config.Name, r.nodes[idx].Config.Port, r.nodes[idx].DataSize, r.nodes[idx].DataCount)
+
 	msg := MqMsg{}
 	_, e := r.items[value.Key]
 	if e == true {
