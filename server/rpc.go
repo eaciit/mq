@@ -174,10 +174,9 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 			}
 		}
 	}
-	fmt.Println(r.nodes[idx].Config.Name, r.nodes[idx].Config.Port, r.nodes[idx].DataSize, r.nodes[idx].DataCount)
+
 	g := r.nodes[idx].DataCount
 	reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
-	fmt.Println(r.nodes[idx].Config.Name, r.nodes[idx].Config.Port, r.nodes[idx].DataSize, r.nodes[idx].DataCount)
 
 	msg := MqMsg{}
 	_, e := r.items[value.Key]
@@ -187,6 +186,11 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 		msg.Key = value.Key
 	}
 	msg.Value = value.Value
+
+	buf, _ := Encode(msg.Value)
+	reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len())) / 1024 / 1024)
+
+	fmt.Println("Data have been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
 	msg.LastAccess = time.Now()
 	r.items[value.Key] = msg
 
