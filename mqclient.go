@@ -22,7 +22,7 @@ func main() {
 
 	msg := MqMsg{Key: "INFO", Value: "New Client Connected"}
 	c.CallToLog("SetLog", msg)
-	
+
 	r := bufio.NewReader(os.Stdin)
 
 	status := ""
@@ -33,7 +33,8 @@ func main() {
 		command := string(line)
 		handleError(e)
 		//fmt.Printf("Processing command: %v \n", command)
-		lowerCommand := strings.ToLower(command)
+		stringsPart := strings.Split(command, " ")
+		lowerCommand := strings.ToLower(stringsPart[0])
 
 		if lowerCommand == "exit" {
 			status = "exit"
@@ -51,7 +52,7 @@ func main() {
 			e := c.CallDecode("Nodes", "", &results)
 			handleError(e)
 			fmt.Printf("%v\n", results)
-		} else if strings.HasPrefix(lowerCommand, "set") {
+		} else if lowerCommand == "set" {
 			//--- this to handle set command
 			commandParts := strings.Split(command, " ")
 			key := commandParts[1]
@@ -61,7 +62,7 @@ func main() {
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			}
-		} else if strings.HasPrefix(lowerCommand, "get") {
+		} else if lowerCommand == "get" {
 			//--- this to handle get command
 			commandParts := strings.Split(command, " ")
 			key := commandParts[1]
@@ -71,8 +72,16 @@ func main() {
 			} else {
 				fmt.Printf("Value: %v \n", msg.Value)
 			}
+		} else if lowerCommand == "getlog" {
+			commandParts := strings.Split(command, " ")
+			key := commandParts[1]
+			value := strings.Join(commandParts[2:], " ")
+			msg := MqMsg{Key: key, Value: value}
+			s, e := c.CallString("GetLogData", msg)
+			handleError(e)
+			fmt.Println(s)
 		} else {
-			errorMsg := "Unable to find command "+command
+			errorMsg := "Unable to find command " + command
 			//c.CallToLog(errorMsg,"ERROR")
 			msg := MqMsg{Key: "ERROR", Value: errorMsg}
 			_, e := c.CallToLog("SetLog", msg)

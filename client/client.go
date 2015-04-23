@@ -53,4 +53,3 @@ func (c *MqClient) CallToLog(op string, key interface{}) (*MqMsg, error) {
 	err := c.connection.Call("MqRPC."+op, key, &result)
 	return &result, err
 }
-

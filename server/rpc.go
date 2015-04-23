@@ -76,7 +76,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	nodeFound := nodeIndex >= 0
 	if nodeFound {
 		errorMsg := "Unable to add node. It is already exist"
-		Logging(errorMsg,"ERROR")
+		Logging(errorMsg, "ERROR")
 		return errors.New(errorMsg)
 	}
 
@@ -84,13 +84,13 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	client, e := NewMqClient(fmt.Sprintf("%s:%d", nodeConfig.Name, nodeConfig.Port), 10*time.Second)
 	if e != nil {
 		errorMsg := fmt.Sprintf("Unable to add node. Could not connect to %s:%d\n", nodeConfig.Name, nodeConfig.Port)
-		Logging(errorMsg,"ERROR")
+		Logging(errorMsg, "ERROR")
 		return errors.New(errorMsg)
 	}
 	_, e = client.Call("SetSlave", nodeConfig)
 	if e != nil {
 		errorMsg := "Unable to add node. Could not set node as slave - message: " + e.Error()
-		Logging(errorMsg,"ERROR")
+		Logging(errorMsg, "ERROR")
 		return errors.New(errorMsg)
 	}
 
@@ -102,7 +102,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	newNode.client = client
 	newNode.StartTime = time.Now()
 	r.nodes = append(r.nodes, newNode)
-	Logging("New Node has been added successfully","INFO")
+	Logging("New Node has been added successfully", "INFO")
 	return nil
 }
 
@@ -133,7 +133,7 @@ func (r *MqRPC) SetLog(value MqMsg, result *MqMsg) error {
 	msg := MqMsg{}
 	msg.Key = value.Key
 	msg.Value = value.Value
-	Logging(msg.Value.(string),msg.Key)
+	Logging(msg.Value.(string), msg.Key)
 	return nil
 }
 
@@ -143,6 +143,14 @@ func (r *MqRPC) GetLog(key time.Time, result *MqMsg) error {
 	} else {
 		(*result).Value = ""
 	}
+	return nil
+}
+
+func (r *MqRPC) GetLogData(value MqMsg, result *MqMsg) error {
+	date := value.Key
+	time := value.Value.(string)
+	logData, _ := GetLogFileData(date, time)
+	(*result).Value = logData
 	return nil
 }
 
@@ -160,7 +168,7 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 
 	*result = msg
 
-	Logging("New Key : '" + msg.Key + "' has already set with value: '"+msg.Value.(string)+"'","INFO")
+	Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
 	return nil
 }
 
@@ -178,10 +186,6 @@ func (r *MqRPC) Delete(key string, result *MqMsg) error {
 	if e == true {
 		delete(r.items, key)
 	}
-	Logging("Key : '" + key + "' has been deleted","INFO")
+	Logging("Key : '"+key+"' has been deleted", "INFO")
 	return nil
 }
-
-
-
-
