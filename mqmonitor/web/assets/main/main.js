@@ -258,9 +258,7 @@
 
 				// pupulate nodes data as options in item section
 				$itemNodeSelect.setDataSource({
-					data: Lazy(res.data.grid).where(function (d) {
-						return (d.ConfigRole !== 'Master');
-					}).map(function (d) {
+					data: Lazy(res.data.grid).map(function (d) {
 						var host = (d.ConfigName + ':' + d.ConfigPort);
 
 						return { 
