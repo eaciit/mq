@@ -15,9 +15,9 @@
 
 		<!-- res/kendoui -->
 		<link rel="stylesheet" href="/res/kendoui/styles/kendo.common.min.css" />
-		<link rel="stylesheet" href="/res/kendoui/styles/kendo.flat.min.css" />
+		<link rel="stylesheet" href="/res/kendoui/styles/kendo.silver.min.css" />
 		<link rel="stylesheet" href="/res/kendoui/styles/kendo.dataviz.min.css" />
-		<link rel="stylesheet" href="/res/kendoui/styles/kendo.dataviz.flat.min.css" />
+		<link rel="stylesheet" href="/res/kendoui/styles/kendo.dataviz.silver.min.css" />
 		<script src="/res/kendoui/js/kendo.all.min.js"></script>
 
 		<!-- css/font-awesome -->
@@ -43,24 +43,26 @@
 				<div class="clearfix"></div>
 			</div>
 
-			<div class="col-md-6 section section-nodes">
-				<div class="panel panel-primary">
-					<div class="panel-heading">
-						<i class="fa fa-cogs"></i> Nodes Grid Information
-					</div>
-					<div class="panel-body">
-						<div class="grid"></div>
+			<div class="col-md-12">
+				<div class="col-md-6 section section-nodes">
+					<div class="panel panel-primary">
+						<div class="panel-heading">
+							<i class="fa fa-cogs"></i> Nodes Grid Information
+						</div>
+						<div class="panel-body">
+							<div class="grid"></div>
+						</div>
 					</div>
 				</div>
-			</div>
 
-			<div class="col-md-6 section section-nodes">
-				<div class="panel panel-primary">
-					<div class="panel-heading">
-						<i class="fa fa-line-chart"></i> Nodes Graph Information
-					</div>
-					<div class="panel-body">
-						<div class="chart"></div>
+				<div class="col-md-6 section section-nodes">
+					<div class="panel panel-primary">
+						<div class="panel-heading">
+							<i class="fa fa-line-chart"></i> Nodes Graph Information
+						</div>
+						<div class="panel-body">
+							<div class="chart"></div>
+						</div>
 					</div>
 				</div>
 			</div>

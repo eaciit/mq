@@ -1,8 +1,27 @@
+.loader {
+  text-align: center;
+  display: none; }
+
+.no-padding {
+  padding: 0px !important; }
+
+.no-margin {
+  margin: 0px !important; }
+
+.k-grid {
+  font-size: 80%; }
+  .k-grid thead.k-grid-header tr th[role=columnheader][data-colspan],
+  .k-grid thead.k-grid-header tr th[data-field=DataCount],
+  .k-grid thead.k-grid-header tr th[data-field=DataSize],
+  .k-grid thead.k-grid-header tr th[data-field=StartTime],
+  .k-grid thead.k-grid-header tr th[data-field=Duration] {
+    text-align: center; }
+
 body {
-  background-color: #f3f3f3; }
+  background-color: #ebeef0; }
   body .main .page-header {
     position: relative;
-    margin: 0px 0px 15px;
+    margin: 0px 0px 30px;
     padding: 20px;
     background-color: white;
     border-bottom: 1px solid #ccc;
@@ -28,26 +47,10 @@ body {
       body .main .section .panel .panel-heading .fa {
         margin-right: 3px; }
   body .main .section .panel-body {
-    background-color: #ebeef0;
+    background-color: #fff;
     min-height: 430px; }
-
-.loader {
-  text-align: center;
-  display: none; }
-
-.no-padding {
-  padding: 0px !important; }
-
-.no-margin {
-  margin: 0px !important; }
-
-.k-grid {
-  font-size: 80%; }
-  .k-grid thead.k-grid-header tr th[role=columnheader][data-colspan],
-  .k-grid thead.k-grid-header tr th[data-field=DataCount],
-  .k-grid thead.k-grid-header tr th[data-field=DataSize],
-  .k-grid thead.k-grid-header tr th[data-field=StartTime],
-  .k-grid thead.k-grid-header tr th[data-field=Duration] {
-    text-align: center; }
+    @media screen and (max-width: 992px) {
+      body .main .section .panel-body {
+        min-height: inherit !important; } }
 
 /*# sourceMappingURL=main.css.map */

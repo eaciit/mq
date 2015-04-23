@@ -10,10 +10,11 @@
 		var $window = $(window);
 
 		// register ajax pull, to make grid shows realtime data
-		var registerAjaxPullFor = function (what, success, error) {
+		var registerAjaxPullFor = function (what, data, success, error) {
 			var doRequest = function () {
 				$.ajax({
 					url: '/data/' + what,
+					data: data,
 					type: 'get',
 					dataType: 'json'
 				})
@@ -32,7 +33,7 @@
 		// ajax pull delay in second
 		// this duration can be changed on the fly
 		this.ajaxPullDelay = {
-			'section-nodes': 5
+			'section-nodes': 7
 		};
 
 		// initiate all components
@@ -61,7 +62,7 @@
 					{ title: 'Data', columns: [
 						{ field: 'DataCount', title: 'Total', width: 90,
 							attributes: { style: 'text-align: right;' } },
-						{ field: 'DataSize', title: 'Size (in MB)', width: 90,
+						{ field: 'DataSize', title: 'Size (in KB)', width: 90,
 							attributes: { style: 'text-align: right;' } }
 					] },
 					{ title: 'Time', columns: [
@@ -84,6 +85,7 @@
 				},
 				seriesDefaults: {
 					type: 'line',
+					style: "smooth",
 					markers: {
 						visible: true,
 						background: "#ebeef0"
@@ -123,12 +125,15 @@
 
 			// prepare ajax pull for nodes,
 			// return data which used in both node grid & chart
-			registerAjaxPullFor('nodes', function (res) {
+			registerAjaxPullFor('nodes', {
+				seriesLimit: 4,
+				seriesDelay: self.ajaxPullDelay['section-nodes']
+			}, function (res) {
 				var $grid = $sectionNodes.find('.grid').data('kendoGrid');
 				var $chart = $sectionNodes.find('.chart').data('kendoChart');
 
 				$grid.setDataSource(new kendo.data.DataSource({
-					data: res.data.grid,
+					data: Lazy(res.data.grid).sortBy(function (d) { return -d.StartTime; }).toArray(),
 					pageSize: $grid.dataSource.pageSize()
 				}));
 
@@ -139,7 +144,7 @@
 						return parseInt(d[v.name], 10)
 					})[v.name];
 
-					v.max = max + (max < 10 ? (max * 2) : (Math.round(max / 5)));
+					v.max = max + Math.ceil(max / 5);
 				});
 
 				// sort data using time ascending
