@@ -20,6 +20,10 @@
 		<link rel="stylesheet" href="/res/kendoui/styles/kendo.dataviz.silver.min.css" />
 		<script src="/res/kendoui/js/kendo.all.min.js"></script>
 
+		<!-- res/toastr -->
+		<link rel="stylesheet" href="/res/toastr/toastr.min.css">
+		<script src="/res/toastr/toastr.min.js"></script>
+
 		<!-- css/font-awesome -->
 		<link rel="stylesheet" href="/res/font-awesome/css/font-awesome.min.css">
 

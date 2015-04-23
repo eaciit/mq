@@ -7,18 +7,29 @@ import (
 	. "github.com/eaciit/mq/server"
 	"html/template"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
 
-type MqMonitor struct {
-	port int
-}
+const (
+	ReconnectDelay       time.Duration = 3
+	ConnectionServerHost string        = "127.0.0.1:7890"
+	ConnectionTimout     time.Duration = time.Second * 10
+)
+
+type (
+	MqMonitor struct {
+		port int
+	}
+
+	FuncParam func() error
+)
 
 func (m *MqMonitor) Start() {
-	client, err := NewMqClient("127.0.0.1:7890", time.Second*10)
-	handleError(err)
+	var client *MqClient
+	var err error
+
+	client, _ = connect()
 
 	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView("mqmonitor/web/assets")))))
 
@@ -31,13 +42,26 @@ func (m *MqMonitor) Start() {
 		w.Header().Set("Content-type", "application/json")
 		r.ParseForm()
 
+		if isServerAlive := r.FormValue("isServerAlive"); isServerAlive == "false" {
+			client, err = connect()
+
+			if err != nil {
+				fmt.Println(err.Error())
+				PrintJSON(w, false, "", "connection is shut down")
+				return
+			}
+		}
+
 		var dataSizeUnit int64 = 1024 // kb
 
 		if r.Method == "GET" {
 			var nodes []Node
 
-			err := client.CallDecode("Nodes", "", &nodes)
-			handleError(err)
+			if success := rpcDo(w, client, func() error {
+				return client.CallDecode("Nodes", "", &nodes)
+			}); !success {
+				return
+			}
 
 			resultGrid := make([]map[string]interface{}, len(nodes))
 
@@ -108,11 +132,22 @@ func (m *MqMonitor) Start() {
 	http.ListenAndServe(fmt.Sprintf(":%d", m.port), nil)
 }
 
-func handleError(e error) {
-	if e != nil {
-		panic(e.Error())
-		os.Exit(100)
+func connect() (*MqClient, error) {
+	return NewMqClient(ConnectionServerHost, ConnectionTimout)
+}
+
+func rpcDo(w http.ResponseWriter, client *MqClient, fn FuncParam) bool {
+	if client == nil {
+		PrintJSON(w, false, "", "connection is shut down")
+		return false
 	}
+
+	if err := fn(); err != nil {
+		PrintJSON(w, false, "", err.Error())
+		return false
+	}
+
+	return true
 }
 
 func StartHTTP(port int) {
