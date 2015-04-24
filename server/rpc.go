@@ -110,7 +110,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	newNode.DataSize = 0
 	newNode.client = client
 	newNode.StartTime = time.Now()
-	newNode.AllocatedSize = nodeConfig.Memory / 1024 / 1024
+	newNode.AllocatedSize = nodeConfig.Memory /// 1024 / 1024
 	r.nodes = append(r.nodes, newNode)
 	Logging("New Node has been added successfully", "INFO")
 	return nil
@@ -221,8 +221,8 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
 			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len())) / 1024 / 1024)
 
-			fmt.Println("Current node Data Size : ", r.nodes[idx].DataSize)
-			fmt.Println("Incoming Data Size : ", int64(buf.Len()))
+			//fmt.Println("Current node Data Size : ", r.nodes[idx].DataSize)
+			//fmt.Println("Incoming Data Size : ", int64(buf.Len()))
 			fmt.Println("Data have been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
 			msg.LastAccess = time.Now()
 			r.items[value.Key] = msg
