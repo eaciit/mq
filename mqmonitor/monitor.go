@@ -17,6 +17,7 @@ import (
 const (
 	ReconnectDelay   time.Duration = 3
 	ConnectionTimout time.Duration = time.Second * 10
+	ItemsLimit       int           = 10
 )
 
 var (
@@ -184,7 +185,12 @@ func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 		searchKeyword := strings.ToLower(r.FormValue("search"))
 		var resultGrid []map[string]interface{}
 
+		i := 0
 		for _, v := range items {
+			if !(i < ItemsLimit) {
+				break
+			}
+
 			dataNode := map[string]interface{}{
 				"Key":        v.Key,
 				"Value":      v.Value.(string),
@@ -204,6 +210,8 @@ func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 			if isExist {
 				resultGrid = append(resultGrid, dataNode)
 			}
+
+			i += 1
 		}
 
 		result := map[string]interface{}{
