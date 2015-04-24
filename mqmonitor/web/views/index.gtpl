@@ -76,13 +76,13 @@
 							<i class="fa fa-files-o"></i> Items Information
 						</div>
 						<div class="panel-body">
-							<div class="row no-margin selector">
+							<!-- <div class="row no-margin selector">
 								<label>Pick Nodes :</label>
 								<select class="nodes" style="width: 200px"></select>
 							</div>
-							<div class="row no-padding no-margin">
+							<div class="row no-padding no-margin"> -->
 								<div class="grid"></div>
-							</div>
+							<!-- </div> -->
 						</div>
 					</div>
 				</div>

@@ -56,8 +56,7 @@ func GetView(view string) string {
 	return filepath.Join(cwd, view)
 }
 
-func FormatDuration(start time.Time) string {
-	duration := time.Since(start)
+func FormatDuration(duration time.Duration) string {
 	hours := int(math.Floor(duration.Hours()))
 	minutes := int(math.Floor(math.Mod(duration.Minutes(), 60)))
 	seconds := int(math.Floor(math.Mod(math.Mod(duration.Seconds(), 3600), 60)))

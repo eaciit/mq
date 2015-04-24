@@ -55,6 +55,12 @@ func (r *MqRPC) Ping(key string, result *MqMsg) error {
 	return nil
 }
 
+func (r *MqRPC) Items(key string, result *MqMsg) error {
+	buf, e := Encode(r.items)
+	result.Value = buf.Bytes()
+	return e
+}
+
 func (r *MqRPC) Nodes(key string, result *MqMsg) error {
 	buf, e := Encode(r.nodes)
 	result.Value = buf.Bytes()

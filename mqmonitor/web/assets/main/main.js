@@ -12,13 +12,23 @@
 		var isServerAlive = true;
 		var ajaxPullDelay = 7;
 		var notifyDelay = 5;
+		var seriesLimit = 6;
+		var dataSizeUnit = 1024;
 
 		// register ajax pull, to make grid shows realtime data
 		var registerAjaxPullFor = function (what, data, success, error, after) {
+			success = (typeof success !== String(undefined)) ? success : function () {};
+			error 	= (typeof error   !== String(undefined)) ? error   : function () {};
+			after 	= (typeof after   !== String(undefined)) ? after   : function () {};
+
+			data = $.extend(true, { 
+				isServerAlive: isServerAlive
+			}, data);
+
 			var doRequest = function () {
 				$.ajax({
 					url: '/data/' + what,
-					data: $.extend(true, { isServerAlive: isServerAlive }, data),
+					data: data,
 					type: 'get',
 					dataType: 'json'
 				})
@@ -26,9 +36,7 @@
 				.error(error);
 			};
 
-			if (typeof after !== String(undefined))
-				after(doRequest);
-
+			after(doRequest);
 			doRequest();
 		};
 
@@ -154,14 +162,14 @@
 				sortable: true, 
 				scrollable: false,
 				columns: [
-					{ field: 'key', title: 'Key', width: 110 },
-					{ field: 'value', title: 'Value', width: 200 },
-					{ field: 'created', title: 'Created', width: 80 },
-					{ field: 'expiry', title: 'Expiry', width: 80 },
+					{ field: 'Key', title: 'Key', width: 110 },
+					{ field: 'Value', title: 'Value', width: 200 },
+					{ field: 'Created', title: 'Created', width: 80 },
+					{ field: 'Expiry', title: 'Expiry', width: 80 },
 				]
 			});
 			
-			// prepare section items, node selection
+			/* // prepare section items, node selection
 			$sectionItemsGrid.find('select.nodes').kendoDropDownList({
 				dataSource: { 
 					data: [
@@ -177,19 +185,17 @@
 					if (valueComp.length === 0)
 						return;
 
-					registerAjaxPullFor('nodes/items', {
+					registerAjaxPullFor('items', {
 						host: valueComp[0],
 						port: valueComp[1]
 					}, function (res) {
-						res = rez
-
 						if (!res.success) {
 							return;
 						}
 
 						var $grid = $sectionItemsGrid.find('.grid').data('kendoGrid');
 						$grid.setDataSource(new kendo.data.DataSource({
-							data: res.data,
+							data: res.data.grid,
 							pageSize: $grid.dataSource.pageSize()
 						}));
 					}, function () {
@@ -197,6 +203,7 @@
 					});
 				}
 			});
+			$sectionItemsGrid.find('select.nodes').closest('.selector').remove(); */
 		};
 
 		// register ajax pull, 
@@ -207,8 +214,9 @@
 			// prepare ajax pull for nodes,
 			// return data which used in both node grid & chart
 			registerAjaxPullFor('nodes', {
-				seriesLimit: 6,
-				seriesDelay: ajaxPullDelay
+				seriesLimit: seriesLimit,
+				seriesDelay: ajaxPullDelay,
+				dataSizeUnit: dataSizeUnit
 			}, function (res) {
 				if (!res.success) {
 					if (res.message === 'connection is shut down')
@@ -225,7 +233,7 @@
 
 				var $nodeGrid = $sectionNodesGrid.find('.grid').data('kendoGrid');
 				var $nodeChart = $sectionNodesChart.find('.chart').data('kendoChart');
-				var $itemNodeSelect = $sectionItemsGrid.find('select.nodes').data('kendoDropDownList');
+				/* var $itemNodeSelect = $sectionItemsGrid.find('select.nodes').data('kendoDropDownList'); */
 
 				$nodeGrid.setDataSource(new kendo.data.DataSource({
 					data: Lazy(res.data.grid).map(function (d) {
@@ -256,7 +264,7 @@
 
 				$nodeChart.redraw();
 
-				// pupulate nodes data as options in item section
+				/** // pupulate nodes data as options in item section
 				$itemNodeSelect.setDataSource({
 					data: Lazy(res.data.grid).map(function (d) {
 						var host = (d.ConfigName + ':' + d.ConfigPort);
@@ -274,10 +282,30 @@
 				if (!$('select.nodes').hasClass('first-load')) {
 					$('select.nodes').data('kendoDropDownList').options.select();
 					$('select.nodes').addClass('first-load');
-				}
+				}*/
 			}, function (a, b, c) {
 				toastr["error"]("Error occured when fetching data for nodes")
 			}, function (doRequest) {
+				setInterval(doRequest, ajaxPullDelay * 1000);
+			});
+
+			// prepare ajax pull for items, grid
+			registerAjaxPullFor('items', {}, function (res) {
+				if (!res.success) {
+					return;
+				}
+
+				var $itemGrid = $sectionItemsGrid.find('.grid').data('kendoGrid');
+
+				$itemGrid.setDataSource(new kendo.data.DataSource({
+					data: Lazy(res.data.grid).map(function (d) {
+						return d;
+					}).sortBy(function (d) { 
+						return -d.LastAccess; 
+					}).toArray(),
+					pageSize: $itemGrid.dataSource.pageSize()
+				}));
+			}, null, function (doRequest) {
 				setInterval(doRequest, ajaxPullDelay * 1000);
 			});
 		};
@@ -310,10 +338,12 @@
 
 var rez = {
 	success: true,
-	data: [
-		{ key: 'name', value: 'noval', created: '12-12-2015', expiry: '6m 2s' },
-		{ key: 'name', value: 'agung', created: '08-11-2015', expiry: '9m 12s' },
-		{ key: 'name', value: 'prayogo', created: '10-10-2015', expiry: '12m 12s' }
-	]
+	data: {
+		grid: [
+			{ Key: 'name', Value: 'noval', Created: '12-12-2015', Expiry: '6m 2s' },
+			{ Key: 'name', Value: 'agung', Created: '08-11-2015', Expiry: '9m 12s' },
+			{ Key: 'name', Value: 'prayogo', Created: '10-10-2015', Expiry: '12m 12s' }
+		]
+	}
 }
 
