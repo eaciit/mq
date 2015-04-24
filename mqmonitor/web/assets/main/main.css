@@ -11,8 +11,11 @@
 .k-grid thead.k-grid-header tr th[role=columnheader][data-colspan],
 .k-grid thead.k-grid-header tr th[data-field=DataCount],
 .k-grid thead.k-grid-header tr th[data-field=DataSize],
+.k-grid thead.k-grid-header tr th[data-field=AllocatedSize],
 .k-grid thead.k-grid-header tr th[data-field=StartTime],
-.k-grid thead.k-grid-header tr th[data-field=Duration] {
+.k-grid thead.k-grid-header tr th[data-field=Duration],
+.k-grid thead.k-grid-header tr th[data-field=Created],
+.k-grid thead.k-grid-header tr th[data-field=Expiry] {
   text-align: center; }
 
 body {

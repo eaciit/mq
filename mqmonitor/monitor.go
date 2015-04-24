@@ -73,13 +73,14 @@ func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 
 		for i, node := range nodes {
 			resultGrid[i] = map[string]interface{}{
-				"ConfigName": node.Config.Name,
-				"ConfigPort": node.Config.Port,
-				"ConfigRole": node.Config.Role,
-				"DataCount":  node.DataCount,
-				"DataSize":   node.DataSize / dataSizeUnit,
-				"StartTime":  node.StartTime.Format("2006-01-02 15:04:05"),
-				"Duration":   FormatDuration(time.Since(node.StartTime)),
+				"ConfigName":    node.Config.Name,
+				"ConfigPort":    node.Config.Port,
+				"ConfigRole":    node.Config.Role,
+				"DataCount":     node.DataCount,
+				"DataSize":      node.DataSize,
+				"AllocatedSize": node.AllocatedSize / dataSizeUnit,
+				"StartTime":     node.StartTime.Format("2006-01-02 15:04:05"),
+				"Duration":      FormatDuration(time.Since(node.StartTime)),
 			}
 		}
 
@@ -96,9 +97,10 @@ func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 				continue
 			}
 
-			totalHost := 0
-			totalDataCount := 0
-			totalDataSize := 0
+			var totalHost int64 = 0
+			var totalDataCount int64 = 0
+			var totalDataSize int64 = 0
+			var totalAllocatedSize int64 = 0
 
 			for _, node := range nodes {
 				eachNodeTimeInt, err := strconv.ParseInt(fmt.Sprintf("%s", node.StartTime.Format("02150405")), 10, 32)
@@ -109,17 +111,19 @@ func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 
 				if eachNodeTimeInt <= eachNowTimeInt {
 					totalHost += 1
-					totalDataCount += int(node.DataCount)
-					totalDataSize += int(node.DataSize / dataSizeUnit)
+					totalDataCount += node.DataCount
+					totalDataSize += node.DataSize
+					totalAllocatedSize += (node.AllocatedSize / dataSizeUnit)
 				}
 			}
 
 			resultChart[i] = map[string]interface{}{
-				"Time":           eachNowTime.Format("15:04:05"),
-				"TimeInt":        eachNowTimeInt,
-				"TotalHost":      totalHost,
-				"TotalDataCount": totalDataCount,
-				"TotalDataSize":  totalDataSize,
+				"Time":               eachNowTime.Format("15:04:05"),
+				"TimeInt":            eachNowTimeInt,
+				"TotalHost":          totalHost,
+				"TotalDataCount":     totalDataCount,
+				"TotalDataSize":      totalDataSize,
+				"TotalAllocatedSize": totalAllocatedSize,
 			}
 		}
 

@@ -13,7 +13,7 @@
 		var ajaxPullDelay = 7;
 		var notifyDelay = 5;
 		var seriesLimit = 6;
-		var dataSizeUnit = 1024;
+		var dataSizeUnit = 1024 * 1024;
 
 		// register ajax pull, to make grid shows realtime data
 		var registerAjaxPullFor = function (what, data, success, error, after) {
@@ -63,20 +63,22 @@
 				scrollable: false,
 				columns: [
 					{ title: 'Configuration', columns: [
-						{ field: 'ConfigHost', title: 'Host', width: 110 },
-						{ field: 'ConfigRole', title: 'Role', width: 90 }
+						{ field: 'ConfigHost', title: 'Host', width: 100 },
+						{ field: 'ConfigRole', title: 'Role', width: 60 }
 					] },
 					{ title: 'Data', columns: [
-						{ field: 'DataCount', title: 'Total', width: 90, format: '{0:N0}',
-							attributes: { style: 'text-align: right;' } },
-						{ field: 'DataSize', title: 'Size (in KB)', width: 90, format: '{0:N2}',
-							attributes: { style: 'text-align: right;' } }
+						{ field: 'DataCount', title: 'Total', width: 80,
+							format: '{0:N0}', attributes: { style: 'text-align: right;' } },
+						{ field: 'DataSize', title: 'Size<br />(in byte)', width: 80,
+							format: '{0:N2}', attributes: { style: 'text-align: right;' } },
+						{ field: 'AllocatedSize', title: 'Allocated<br />(in Mb)', width: 80,
+							format: '{0:N2}', attributes: { style: 'text-align: right;' } }
 					] },
 					{ title: 'Time', columns: [
-						{ field: 'StartTime', title: 'Start Time', width: 100, 
+						{ field: 'StartTime', title: 'Start Time', width: 90,
 							attributes: { style: 'text-align: center;' } },
-						{ field: 'Duration', title: 'Duration', width: 100, 
-							attributes: { style: 'text-align: right;' } }
+						{ field: 'Duration', title: 'Duration', width: 80, 
+							attributes: { style: 'text-align: center;' } }
 					] }
 				],
 				dataBound: function () {
@@ -104,42 +106,38 @@
 				},
 				series: [
 					{ field: 'TotalHost', name: 'Total Host', axis: 'TotalHost',
-						color: '#99b433',
-						markers: {
-							background: '#99b433'
-						}
+						markers: { background: '#99b433' }
 					},
 					{ field: 'TotalDataCount', name: 'Total Data Count', axis: 'TotalDataCount',
-						color: '#ee1111',
-						markers: {
-							background: '#ee1111'
-						}
+						markers: { background: '#ee1111' }
 					},
 					{ field: 'TotalDataSize', name: 'Total Data Size', axis: 'TotalDataSize',
-						color: '#ffc40d',
-						markers: {
-							background: '#ffc40d'
-						}
+						markers: { background: '#ffc40d' }
+					},
+					{ field: 'TotalAllocatedSize', name: 'Total Allocated Size', axis: 'TotalAllocatedSize',
+						markers: { background: '#337ab7' }
 					}
 				],
+				seriesColors: ['#99b433', '#ee1111', '#ffc40d', '#337ab7'],
 				categoryAxis: {
 					field: 'Time',
-					axisCrossingValues: [0, 0, 100],
+					axisCrossingValues: [0, 0, 100, 100],
 					majorGridLines: {
 						color: '#F9F9F9'
 					}
 				},
 				valueAxes: [
-					{ name: 'TotalHost', title: { text: 'Total Host' }, 
-						min: 0, max: 0,
+					{ name: 'TotalHost', title: { text: 'Total Host' }, min: 0,
 						majorGridLines: {
 							color: '#F9F9F9'
 						} 
 					},
 					{ name: 'TotalDataCount', title: { text: 'Total Data Count' }, 
-						min: 0, max: 0 },
+						min: 0 },
 					{ name: 'TotalDataSize', title: { text: 'Total Data Size' }, 
-						min: 0, max: 0 }
+						min: 0 },
+					{ name: 'TotalAllocatedSize', title: { text: 'Total Allocated Size' }, 
+						min: 0 }
 				],
 				tooltip: {
 					visible: true,
@@ -162,10 +160,12 @@
 				sortable: true, 
 				scrollable: false,
 				columns: [
-					{ field: 'Key', title: 'Key', width: 110 },
-					{ field: 'Value', title: 'Value', width: 200 },
-					{ field: 'Created', title: 'Created', width: 80 },
-					{ field: 'Expiry', title: 'Expiry', width: 80 },
+					{ field: 'Key', title: 'Key' },
+					{ field: 'Value', title: 'Value' },
+					{ field: 'Created', title: 'Created', width: 90,
+						attributes: { style: 'text-align: center;' } },
+					{ field: 'Expiry', title: 'Expiry', width: 80,
+						attributes: { style: 'text-align: center;' } },
 				]
 			});
 			
@@ -247,12 +247,12 @@
 
 				// get max value of each series,
 				// then use it as valueAxis.max of each series
-				Lazy($nodeChart.options.valueAxis).each(function(v) {
+				Lazy($nodeChart.options.valueAxis).each(function(v, i) {
 					var max = Lazy(res.data.chart).max(function (d) {
 						return parseInt(d[v.name], 10)
 					})[v.name];
 
-					v.max = max + Math.ceil(max / 5);
+					v.max = max + (5 * String(max).length);
 				});
 
 				// sort data using time ascending
