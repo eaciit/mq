@@ -47,11 +47,11 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 func (r *MqRPC) Ping(key string, result *MqMsg) error {
 	//fmt.Println("Allocated memory", r.nodes[0].AllocatedSize)
 	pingInfo := fmt.Sprintf("Server is running on port %s\n", strconv.Itoa(r.Config.Port))
-	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize \t\t\t|  MaxSize \t\t\t \n")
+	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize (MB) \t\t\t|  MaxMemorySize (MB)\t\t\t \n")
 	for i, n := range r.nodes {
 		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %d \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
 			n.Config.Role,
-			n.ActiveDuration(), n.DataCount, (n.DataSize), (n.AllocatedSize))
+			n.ActiveDuration(), n.DataCount, (n.DataSize), (n.AllocatedSize/1024/1024))
 	}
 	(*result).Value = pingInfo
 	return nil
@@ -110,7 +110,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	newNode.DataSize = 0
 	newNode.client = client
 	newNode.StartTime = time.Now()
-	newNode.AllocatedSize = nodeConfig.Memory
+	newNode.AllocatedSize = nodeConfig.Memory / 1024 / 1024
 	r.nodes = append(r.nodes, newNode)
 	Logging("New Node has been added successfully", "INFO")
 	return nil
@@ -219,8 +219,10 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 
 		if maxallocate > (r.nodes[idx].DataSize + int64(buf.Len())) {
 			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
-			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len()))) // / 1024 / 1024)
+			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len())) / 1024 / 1024)
 
+			fmt.Println("Current node Data Size : ", r.nodes[idx].DataSize)
+			fmt.Println("Incoming Data Size : ", int64(buf.Len()))
 			fmt.Println("Data have been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
 			msg.LastAccess = time.Now()
 			r.items[value.Key] = msg
