@@ -1,9 +1,12 @@
 package main
 
 import (
+	"flag"
 	"github.com/eaciit/mq/mqmonitor"
 )
 
 func main() {
-	monitor.StartHTTP(1234)
+	port := flag.Int("port", 1234, "-port=1234")
+	flag.Parse()
+	monitor.StartHTTP(*port)
 }
