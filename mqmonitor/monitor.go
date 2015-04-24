@@ -22,6 +22,7 @@ const (
 
 var (
 	ConnectionServerHost string
+	Layout               *template.Template = GetTemplateView("mqmonitor/web/views/*")
 )
 
 type (
@@ -42,8 +43,8 @@ func (m *MqMonitor) Start() {
 	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView("mqmonitor/web/assets")))))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		t, _ := template.ParseFiles(GetView("mqmonitor/web/views/index.gtpl"))
-		t.Execute(w, nil)
+		// Layout = GetTemplateView("mqmonitor/web/views/*") // enable only for dev purpose
+		_ = Layout.ExecuteTemplate(w, "index", nil)
 	})
 
 	http.HandleFunc("/data/nodes", func(w http.ResponseWriter, r *http.Request) {

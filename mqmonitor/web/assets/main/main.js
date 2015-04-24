@@ -56,6 +56,7 @@
 		this.init = function () {
 			// toastr init
 			toastr.options.closeButton = true
+			toastr.options.positionClass = 'toast-bottom-right';
 
 			// notify about delay every some minutes
 			setInterval(function () {
@@ -180,6 +181,8 @@
 						attributes: { style: 'text-align: center;' } },
 				]
 			});
+
+			$body.find('.menu-nav .page-' + $body.find("[data-page]").attr("data-page")).addClass('active');
 		};
 
 		// register ajax pull, 

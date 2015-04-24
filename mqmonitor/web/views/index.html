@@ -1,0 +1,62 @@
+{{define "index"}}
+{{template "head"}}
+<div class="col-md-12" data-page="index">
+	<div class="col-md-6 section section-nodes-grid">
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<i class="fa fa-cogs"></i> Nodes Information
+			</div>
+			<div class="panel-body">
+				<div class="col-md-12 nav-search">
+					<div class="input-group input-sm">
+						<div class="input-group-addon input-sm">Search</div>
+						<input type="text" class="form-control input-sm input-search" placeholder="Type search keyword here ..." />
+						<button class="btn btn-sm btn-success btn-search" data-ajax="nodes">
+							<span class="glyphicon glyphicon-search"></span> Search
+						</button>
+					</div>
+				</div>
+				<div class="row no-padding no-margin">
+					<div class="grid"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-6 section section-nodes-chart">
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<i class="fa fa-bar-chart-o"></i> Nodes Information
+			</div>
+			<div class="panel-body">
+				<div class="chart"></div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-6 section section-items-grid">
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<i class="fa fa-files-o"></i> Items Information
+			</div>
+			<div class="panel-body">
+				<div class="col-md-12 nav-search">
+					<div class="input-group input-sm">
+						<div class="input-group-addon input-sm">Search</div>
+						<input type="text" class="form-control input-sm input-search" placeholder="Type search keyword here ..." />
+						<button class="btn btn-sm btn-success btn-search" data-ajax="items">
+							<span class="glyphicon glyphicon-search"></span> Search
+						</button>
+					</div>
+				</div>
+				<div class="row no-padding no-margin">
+					<div class="grid"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+</div>
+{{template "foot"}}
+{{end}}

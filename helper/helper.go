@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"math"
 	"net/http"
 	"os"
@@ -49,6 +50,10 @@ func PrintJSON(w http.ResponseWriter, success bool, data interface{}, message st
 
 		fmt.Fprintf(w, "%s\n", result)
 	}
+}
+
+func GetTemplateView(path string) *template.Template {
+	return template.Must(template.ParseGlob(GetView("mqmonitor/web/views/*")))
 }
 
 func GetView(view string) string {
