@@ -2,20 +2,23 @@ package server
 
 import (
 	"encoding/gob"
+	//"fmt"
 	"net"
 	"net/rpc"
 	"strconv"
 )
 
 type ServerConfig struct {
-	Name string
-	Port int
-	Role string
+	Name   string
+	Port   int
+	Role   string
+	Memory int64
 }
 
-func StartMQServer(server string, port int) error {
+func StartMQServer(server string, port int, memory int64) error {
+	//fmt.Println("StartMQServer - Memory", memory)
 	gob.Register(ServerConfig{})
-	mqrpc := NewRPC(&ServerConfig{server, port, "Master"})
+	mqrpc := NewRPC(&ServerConfig{server, port, "Master", memory})
 	rpc.Register(mqrpc)
 	l, e := net.Listen("tcp", ":"+strconv.Itoa(port))
 	defer l.Close()

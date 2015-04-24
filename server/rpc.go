@@ -16,8 +16,9 @@ type Node struct {
 	DataCount int64
 	DataSize  int64
 
-	client    *MqClient
-	StartTime time.Time
+	client        *MqClient
+	StartTime     time.Time
+	AllocatedSize int64
 }
 
 type MqRPC struct {
@@ -38,18 +39,19 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 	m := new(MqRPC)
 	m.Config = cfg
 	m.items = make(map[string]MqMsg)
-	m.nodes = []Node{Node{cfg, 0, 0, nil, time.Now()}}
+	m.nodes = []Node{Node{cfg, 0, 0, nil, time.Now(), int64(cfg.Memory)}}
 	m.Host = cfg
 	return m
 }
 
 func (r *MqRPC) Ping(key string, result *MqMsg) error {
+	//fmt.Println("Allocated memory", r.nodes[0].AllocatedSize)
 	pingInfo := fmt.Sprintf("Server is running on port %s\n", strconv.Itoa(r.Config.Port))
-	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| Data# \t\t\t| Data(MB) \n")
+	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize \t\t\t|  MaxSize \t\t\t \n")
 	for i, n := range r.nodes {
-		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %d \n", i, n.Config.Name, n.Config.Port,
+		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %d \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
 			n.Config.Role,
-			n.ActiveDuration(), n.DataCount, (n.DataSize/1024/1024))
+			n.ActiveDuration(), n.DataCount, (n.DataSize), (n.AllocatedSize))
 	}
 	(*result).Value = pingInfo
 	return nil
@@ -108,6 +110,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	newNode.DataSize = 0
 	newNode.client = client
 	newNode.StartTime = time.Now()
+	newNode.AllocatedSize = nodeConfig.Memory
 	r.nodes = append(r.nodes, newNode)
 	Logging("New Node has been added successfully", "INFO")
 	return nil
@@ -163,27 +166,7 @@ func (r *MqRPC) GetLogData(value MqMsg, result *MqMsg) error {
 
 func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 
-	//r.GetMinNode()
-	var countNd int64 // := r.nodes[0].DataCount
-	//var nd Node       //:= r.nodes[0]
-	var idx int
-	for i := 0; i < len(r.nodes); i++ {
-		if i == 0 {
-			//nd = r.nodes[0]
-			countNd = r.nodes[0].DataCount
-			idx = 0
-		} else {
-			if countNd > r.nodes[i].DataCount {
-				//nd = r.nodes[i]
-				countNd = r.nodes[i].DataCount
-				idx = i
-			}
-		}
-	}
-
-	g := r.nodes[idx].DataCount
-	reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
-
+	// get value msg
 	msg := MqMsg{}
 	_, e := r.items[value.Key]
 	if e == true {
@@ -192,17 +175,66 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 		msg.Key = value.Key
 	}
 	msg.Value = value.Value
-
 	buf, _ := Encode(msg.Value)
-	reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len())) / 1024 / 1024)
 
-	fmt.Println("Data have been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
-	msg.LastAccess = time.Now()
-	r.items[value.Key] = msg
+	// get nodes where ===> r.nodes[j].DataSize+int64(buf.Len()) < r.nodes[j].AllocatedSize
+	idxmasuk := make(map[int]int)
+	counteridx := 1
+	for j := 0; j < len(r.nodes); j++ {
+		if r.nodes[j].DataSize+int64(buf.Len()) < r.nodes[j].AllocatedSize {
+			// masuk kriteria
+			idxmasuk[j] = j
+			counteridx++
+		}
+	}
 
-	*result = msg
+	// ada node yang available
+	if len(idxmasuk) > 0 {
+		// get min node berdasarkan idxmasuk (contains)
+		var countNd int64
+		var idx int
 
-	Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
+		// pick min Node
+		for i := 0; i < len(r.nodes); i++ {
+			if _, ok := idxmasuk[i]; ok { // node ada di list map
+				if i == 0 {
+					//nd = r.nodes[0]
+					countNd = r.nodes[0].DataCount
+					idx = 0
+				} else {
+					if countNd > r.nodes[i].DataCount {
+						//nd = r.nodes[i]
+						countNd = r.nodes[i].DataCount
+						idx = i
+					}
+				}
+
+			} else {
+				// all nodes tidak dapat di isikan data, karena maxsize
+			}
+		}
+
+		g := r.nodes[idx].DataCount
+		maxallocate := r.nodes[idx].AllocatedSize
+
+		if maxallocate > (r.nodes[idx].DataSize + int64(buf.Len())) {
+			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
+			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len()))) // / 1024 / 1024)
+
+			fmt.Println("Data have been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
+			msg.LastAccess = time.Now()
+			r.items[value.Key] = msg
+
+			*result = msg
+
+			Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
+		} else {
+			Logging("New Key : '"+msg.Key+"' with value: '"+msg.Value.(string)+"', data cannot be transmit, because of memory Allocation all node reach max limit", "INFO")
+		}
+	} else {
+		Logging("Data cannot be transmit, because of All node reach max limit", "INFO")
+	}
+
 	return nil
 }
 
