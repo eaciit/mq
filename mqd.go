@@ -17,6 +17,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	portFlag := flag.Int("port", 7890, "Port of RCP call. Default is 7890")
 	hostFlag := flag.String("master", "", "Master host. Default is localhost:7890")
+	memoryFlag := flag.Int64("memory", 10485760, "Max Allocated memory node Default is 10 Mb")
 	flag.Parse()
 
 	hostName := "127.0.0.1"
@@ -39,7 +40,7 @@ func main() {
 	startStatus := make(chan string)
 	fmt.Printf("Starting MQ server at port %d \n", *portFlag)
 	go func() {
-		e = StartMQServer("127.0.0.1",*portFlag)
+		e = StartMQServer("127.0.0.1", *portFlag, *memoryFlag)
 		if e != nil {
 			//panic("Unable to start server: " + e.Error())
 			startStatus <- fmt.Sprintf("\nUnable to start service : %s \n", e.Error())
