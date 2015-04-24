@@ -6,9 +6,20 @@ import (
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
+	"math"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
+)
+
+const (
+	secondsToKill int = 10
+)
+
+var (
+	serverStartIdle time.Time
+	isServerIdle    bool = false
 )
 
 type Node struct {
@@ -16,8 +27,10 @@ type Node struct {
 	DataCount int64
 	DataSize  int64
 
-	client    *MqClient
-	StartTime time.Time
+	client       *MqClient
+	StartTime    time.Time
+	offlineStart time.Time
+	isOffline    bool
 }
 
 type MqRPC struct {
@@ -38,7 +51,7 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 	m := new(MqRPC)
 	m.Config = cfg
 	m.items = make(map[string]MqMsg)
-	m.nodes = []Node{Node{cfg, 0, 0, nil, time.Now()}}
+	m.nodes = []Node{Node{cfg, 0, 0, nil, time.Now(), time.Now(), false}}
 	m.Host = cfg
 	return m
 }
@@ -102,6 +115,7 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	newNode.DataSize = 0
 	newNode.client = client
 	newNode.StartTime = time.Now()
+	newNode.isOffline = false
 	r.nodes = append(r.nodes, newNode)
 	Logging("New Node has been added successfully", "INFO")
 	return nil
@@ -144,6 +158,101 @@ func (r *MqRPC) GetLog(key time.Time, result *MqMsg) error {
 	} else {
 		(*result).Value = ""
 	}
+	return nil
+}
+
+func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
+	newNodes := []Node{}
+	for i, n := range r.nodes {
+		//- check health of the slave
+		if strings.ToLower(n.Config.Role) == "slave" {
+			_, e := NewMqClient(fmt.Sprintf("%s:%d", n.Config.Name, n.Config.Port), 1*time.Second)
+			isActive := true
+			if e != nil {
+
+				if !n.isOffline {
+					//--- set offline to true and start the offline
+					n.isOffline = true
+					n.offlineStart = time.Now()
+					msg := fmt.Sprintf("CHECK HEALTH OF %s:%d, Slave did not response since %s!", n.Config.Name, n.Config.Port, n.offlineStart)
+					Logging(msg, "ERROR")
+				}
+
+				//errorMsg := fmt.Sprintf("CHECK HEALTH OF %s:%d, Slave did not response since %s!", n.Config.Name, n.Config.Port, n.offlineStart)
+				//Logging(errorMsg, "ERROR")
+
+				//-- check timeout to kill
+				duration := time.Since(n.offlineStart)
+				kill := int(math.Floor(math.Mod(math.Mod(duration.Seconds(), 3600), 60)))
+				if kill >= secondsToKill {
+					isActive = false
+					errorMsg := fmt.Sprintf("SHUTTING DOWN SLAVE %s:%d, after idle more than %d second(s)", n.Config.Name, n.Config.Port, secondsToKill)
+					Logging(errorMsg, "INFO")
+
+				}
+
+				//then remove from r.nodes
+
+			} else {
+				if n.isOffline {
+					errorMsg := fmt.Sprintf("CHECK HEALTH OF %s:%d, Slave is Up Again!", n.Config.Name, n.Config.Port)
+					//fmt.Println(errorMsg)
+					Logging(errorMsg, "INFO")
+				}
+				n.isOffline = false
+				//errorMsg := fmt.Sprintf("CHECK HEALTH OF %s:%d, FINE!", n.Config.Name, n.Config.Port)
+				//fmt.Println(errorMsg)
+			}
+			if isActive {
+				newNodes = append(newNodes, n)
+			}
+			r.nodes[i] = n
+		} else {
+			//if master
+			newNodes = append(newNodes, n)
+		}
+
+	}
+	r.nodes = newNodes
+	(*result).Value = ""
+	return nil
+}
+
+func (r *MqRPC) CheckHealthMaster(key string, result *MqMsg) error {
+	callbackCmd := ""
+	//fmt.Println("cek master")
+	_, e := NewMqClient(fmt.Sprintf(key), 1*time.Second)
+	if e != nil {
+		//fmt.Println(e)
+		if !isServerIdle {
+			isServerIdle = true
+			serverStartIdle = time.Now()
+			errorMsg := fmt.Sprintf("CHECK HEALTH MASTER, Master did not response since %s!", serverStartIdle)
+			Logging(errorMsg, "ERROR")
+		}
+
+		//-- check timeout to kill
+		duration := time.Since(serverStartIdle)
+		kill := int(math.Floor(math.Mod(math.Mod(duration.Seconds(), 3600), 60)))
+		if kill >= secondsToKill {
+			errorMsg := fmt.Sprintf("SHUTTING DOWN, after master idle more than %d second(s)", secondsToKill)
+			Logging(errorMsg, "INFO")
+			callbackCmd = "KILL"
+		}
+
+	} else {
+		if isServerIdle {
+			errorMsg := fmt.Sprintf("CHECK HEALTH OF MASTER, Master is Up Again!")
+			//fmt.Println(errorMsg)
+			Logging(errorMsg, "INFO")
+		}
+		isServerIdle = false
+		//errorMsg := fmt.Sprintf("CHECK HEALTH OF MASTER, FINE!")
+		//fmt.Println(errorMsg)
+
+		callbackCmd = ""
+	}
+	(*result).Value = callbackCmd
 	return nil
 }
 

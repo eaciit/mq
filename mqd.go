@@ -39,7 +39,7 @@ func main() {
 	startStatus := make(chan string)
 	fmt.Printf("Starting MQ server at port %d \n", *portFlag)
 	go func() {
-		e = StartMQServer("127.0.0.1",*portFlag)
+		e = StartMQServer("127.0.0.1", *portFlag)
 		if e != nil {
 			//panic("Unable to start server: " + e.Error())
 			startStatus <- fmt.Sprintf("\nUnable to start service : %s \n", e.Error())
@@ -73,6 +73,7 @@ func main() {
 			fmt.Printf("Unable to set as node : %s", e.Error())
 			return
 		}
+		//-- c.Call("SetHost",&ServerConfig{})
 	}
 
 	status := ""
@@ -90,7 +91,21 @@ func main() {
 				status = "exit"
 			}
 		}
+
+		if *hostFlag != "" {
+			//this is slave
+			s, _ = c.CallString("CheckHealthMaster", fmt.Sprintf("%s:%d", hostName, hostPort))
+			if s == "KILL" {
+				status = "exit"
+			}
+
+		} else {
+			//this is master
+			c.CallString("CheckHealthSlaves", "")
+		}
+
 		t0 = time.Now()
 		time.Sleep(1 * time.Second)
 	}
+
 }
