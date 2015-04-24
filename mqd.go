@@ -74,6 +74,7 @@ func main() {
 			fmt.Printf("Unable to set as node : %s", e.Error())
 			return
 		}
+		//-- c.Call("SetHost",&ServerConfig{})
 	}
 
 	status := ""
@@ -91,7 +92,21 @@ func main() {
 				status = "exit"
 			}
 		}
+
+		if *hostFlag != "" {
+			//this is slave
+			s, _ = c.CallString("CheckHealthMaster", fmt.Sprintf("%s:%d", hostName, hostPort))
+			if s == "KILL" {
+				status = "exit"
+			}
+
+		} else {
+			//this is master
+			c.CallString("CheckHealthSlaves", "")
+		}
+
 		t0 = time.Now()
 		time.Sleep(1 * time.Second)
 	}
+
 }
