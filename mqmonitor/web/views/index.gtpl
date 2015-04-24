@@ -54,7 +54,18 @@
 							<i class="fa fa-cogs"></i> Nodes Information
 						</div>
 						<div class="panel-body">
-							<div class="grid"></div>
+							<div class="col-md-12 nav-search">
+								<div class="input-group input-sm">
+									<div class="input-group-addon input-sm">Search</div>
+									<input type="text" class="form-control input-sm input-search" placeholder="Type search keyword here ..." />
+									<button class="btn btn-sm btn-success btn-search" data-ajax="nodes">
+										<span class="glyphicon glyphicon-search"></span> Search
+									</button>
+								</div>
+							</div>
+							<div class="row no-padding no-margin">
+								<div class="grid"></div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -76,13 +87,18 @@
 							<i class="fa fa-files-o"></i> Items Information
 						</div>
 						<div class="panel-body">
-							<!-- <div class="row no-margin selector">
-								<label>Pick Nodes :</label>
-								<select class="nodes" style="width: 200px"></select>
+							<div class="col-md-12 nav-search">
+								<div class="input-group input-sm">
+									<div class="input-group-addon input-sm">Search</div>
+									<input type="text" class="form-control input-sm input-search" placeholder="Type search keyword here ..." />
+									<button class="btn btn-sm btn-success btn-search" data-ajax="items">
+										<span class="glyphicon glyphicon-search"></span> Search
+									</button>
+								</div>
 							</div>
-							<div class="row no-padding no-margin"> -->
+							<div class="row no-padding no-margin">
 								<div class="grid"></div>
-							<!-- </div> -->
+							</div>
 						</div>
 					</div>
 				</div>

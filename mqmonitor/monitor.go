@@ -8,14 +8,19 @@ import (
 	. "github.com/eaciit/mq/server"
 	"html/template"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 const (
-	ReconnectDelay       time.Duration = 3
-	ConnectionServerHost string        = "127.0.0.1:7890"
-	ConnectionTimout     time.Duration = time.Second * 10
+	ReconnectDelay   time.Duration = 3
+	ConnectionTimout time.Duration = time.Second * 10
+)
+
+var (
+	ConnectionServerHost string
 )
 
 type (
@@ -30,7 +35,8 @@ func (m *MqMonitor) Start() {
 	var client *MqClient
 	var err error
 
-	client, _ = connect()
+	client, err = connect()
+	Errorable(err)
 
 	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView("mqmonitor/web/assets")))))
 
@@ -47,7 +53,13 @@ func (m *MqMonitor) Start() {
 		dataItems(w, r, client, err)
 	})
 
-	http.ListenAndServe(fmt.Sprintf(":%d", m.port), nil)
+	fmt.Printf("starting http at :%d, connecting to master %s\n", m.port, ConnectionServerHost)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", m.port), nil)
+	Errorable(err, func() {
+		if err != nil {
+			os.Exit(0)
+		}
+	})
 }
 
 func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
@@ -69,10 +81,11 @@ func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 			return
 		}
 
-		resultGrid := make([]map[string]interface{}, len(nodes))
+		searchKeyword := strings.ToLower(r.FormValue("search"))
+		var resultGrid []map[string]interface{}
 
-		for i, node := range nodes {
-			resultGrid[i] = map[string]interface{}{
+		for _, node := range nodes {
+			dataNode := map[string]interface{}{
 				"ConfigName":    node.Config.Name,
 				"ConfigPort":    node.Config.Port,
 				"ConfigRole":    node.Config.Role,
@@ -81,6 +94,18 @@ func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 				"AllocatedSize": node.AllocatedSize / dataSizeUnit,
 				"StartTime":     node.StartTime.Format("2006-01-02 15:04:05"),
 				"Duration":      FormatDuration(time.Since(node.StartTime)),
+			}
+
+			isExist := (len(searchKeyword) == 0)
+			for _, v := range dataNode {
+				if strings.Contains(strings.ToLower(AsString(v)), searchKeyword) {
+					isExist = true
+					break
+				}
+			}
+
+			if isExist {
+				resultGrid = append(resultGrid, dataNode)
 			}
 		}
 
@@ -156,11 +181,11 @@ func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 			return
 		}
 
-		resultGrid := make([]map[string]interface{}, len(items))
+		searchKeyword := strings.ToLower(r.FormValue("search"))
+		var resultGrid []map[string]interface{}
 
-		var i int = 0
 		for _, v := range items {
-			resultGrid[i] = map[string]interface{}{
+			dataNode := map[string]interface{}{
 				"Key":        v.Key,
 				"Value":      v.Value.(string),
 				"Created":    v.Created.Format("2006-01-02 15:04:05"),
@@ -168,7 +193,17 @@ func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 				"Expiry":     FormatDuration(v.Expiry),
 			}
 
-			i += 1
+			isExist := (len(searchKeyword) == 0)
+			for _, v := range dataNode {
+				if strings.Contains(strings.ToLower(AsString(v)), searchKeyword) {
+					isExist = true
+					break
+				}
+			}
+
+			if isExist {
+				resultGrid = append(resultGrid, dataNode)
+			}
 		}
 
 		result := map[string]interface{}{
@@ -215,7 +250,9 @@ func isServerAlive(w http.ResponseWriter, r *http.Request, client *MqClient) boo
 	return true
 }
 
-func StartHTTP(port int) {
+func StartHTTP(serverHost string, port int) {
+	ConnectionServerHost = serverHost
+
 	monitor := new(MqMonitor)
 	monitor.port = port
 	monitor.Start()

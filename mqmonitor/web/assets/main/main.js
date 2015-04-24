@@ -14,30 +14,42 @@
 		var notifyDelay = 5;
 		var seriesLimit = 6;
 		var dataSizeUnit = 1024 * 1024;
+		var ajaxPullFor = {};
+		var timeoutFor = {};
 
 		// register ajax pull, to make grid shows realtime data
 		var registerAjaxPullFor = function (what, data, success, error, after) {
-			success = (typeof success !== String(undefined)) ? success : function () {};
-			error 	= (typeof error   !== String(undefined)) ? error   : function () {};
-			after 	= (typeof after   !== String(undefined)) ? after   : function () {};
+			var doProcess = ajaxPullFor[what] = function () {
+				success = (typeof success !== String(undefined)) ? success : function () {};
+				error 	= (typeof error   !== String(undefined)) ? error   : function () {};
 
-			data = $.extend(true, { 
-				isServerAlive: isServerAlive
-			}, data);
+				console.log($.extend(true, { 
+						isServerAlive: isServerAlive
+					}, data()));
 
-			var doRequest = function () {
 				$.ajax({
 					url: '/data/' + what,
-					data: data,
+					data: $.extend(true, { 
+						isServerAlive: isServerAlive
+					}, data()),
 					type: 'get',
 					dataType: 'json'
 				})
-				.success(success)
-				.error(error);
+				.success(function (res) {
+					if (typeof success !== String(undefined))
+						success(res);
+					if (typeof after !== String(undefined))
+						timeoutFor[what] = after(doProcess);
+				})
+				.error(function (a, b, c) {
+					if (typeof error !== String(undefined))
+						error(a, b, c);
+					if (typeof after !== String(undefined))
+						timeoutFor[what] = after(doProcess);
+				});
 			};
 
-			after(doRequest);
-			doRequest();
+			doProcess();
 		};
 
 		// initiate all components
@@ -47,7 +59,7 @@
 
 			// notify about delay every some minutes
 			setInterval(function () {
-				toastr['error']('data refreshed every ' + ajaxPullDelay + ' seconds');
+				toastr.error('data refreshed every ' + ajaxPullDelay + ' seconds');
 			}, 1000 * 60 * notifyDelay);
 
 			// prepare section nodes, grid
@@ -162,48 +174,12 @@
 				columns: [
 					{ field: 'Key', title: 'Key' },
 					{ field: 'Value', title: 'Value' },
-					{ field: 'Created', title: 'Created', width: 90,
+					{ field: 'Created', title: 'Created', width: 140,
 						attributes: { style: 'text-align: center;' } },
 					{ field: 'Expiry', title: 'Expiry', width: 80,
 						attributes: { style: 'text-align: center;' } },
 				]
 			});
-			
-			/* // prepare section items, node selection
-			$sectionItemsGrid.find('select.nodes').kendoDropDownList({
-				dataSource: { 
-					data: [
-						{ text: 'Select one ...', value: '' }
-					]
-				},
-				dataTextField: 'text',
-				dataValueField: 'value',
-				select: function (e) {
-					var value = $sectionItemsGrid.find('select.nodes').data('kendoDropDownList').value();
-					var valueComp = String(value).split(':');
-
-					if (valueComp.length === 0)
-						return;
-
-					registerAjaxPullFor('items', {
-						host: valueComp[0],
-						port: valueComp[1]
-					}, function (res) {
-						if (!res.success) {
-							return;
-						}
-
-						var $grid = $sectionItemsGrid.find('.grid').data('kendoGrid');
-						$grid.setDataSource(new kendo.data.DataSource({
-							data: res.data.grid,
-							pageSize: $grid.dataSource.pageSize()
-						}));
-					}, function () {
-						toastr["error"]("Error occured when fetching items data for selected node")
-					});
-				}
-			});
-			$sectionItemsGrid.find('select.nodes').closest('.selector').remove(); */
 		};
 
 		// register ajax pull, 
@@ -213,27 +189,29 @@
 
 			// prepare ajax pull for nodes,
 			// return data which used in both node grid & chart
-			registerAjaxPullFor('nodes', {
-				seriesLimit: seriesLimit,
-				seriesDelay: ajaxPullDelay,
-				dataSizeUnit: dataSizeUnit
+			registerAjaxPullFor('nodes', function () {
+				return {
+					seriesLimit: seriesLimit,
+					seriesDelay: ajaxPullDelay,
+					dataSizeUnit: dataSizeUnit,
+					search: $sectionNodesGrid.find('.nav-search .input-search').val()
+				};
 			}, function (res) {
 				if (!res.success) {
 					if (res.message === 'connection is shut down')
 						isServerAlive = false;
 
-					toastr["error"](res.message);
+					toastr.error(res.message);
 					return;
 				}
 
 				if (isServerAlive == false) {
 					isServerAlive = true;
-					toastr["success"]("connected to server");
+					toastr.success("connected to server");
 				}
 
 				var $nodeGrid = $sectionNodesGrid.find('.grid').data('kendoGrid');
 				var $nodeChart = $sectionNodesChart.find('.chart').data('kendoChart');
-				/* var $itemNodeSelect = $sectionItemsGrid.find('select.nodes').data('kendoDropDownList'); */
 
 				$nodeGrid.setDataSource(new kendo.data.DataSource({
 					data: Lazy(res.data.grid).map(function (d) {
@@ -263,34 +241,18 @@
 				}));
 
 				$nodeChart.redraw();
-
-				/** // pupulate nodes data as options in item section
-				$itemNodeSelect.setDataSource({
-					data: Lazy(res.data.grid).map(function (d) {
-						var host = (d.ConfigName + ':' + d.ConfigPort);
-
-						return { 
-							value: host, 
-							text: (host + ' (' + d.ConfigRole + ')') 
-						};
-					}).sortBy(function (d) { 
-						return d.TimeInt; 
-					}).toArray()
-				});
-
-				// populate to nodes for the first time
-				if (!$('select.nodes').hasClass('first-load')) {
-					$('select.nodes').data('kendoDropDownList').options.select();
-					$('select.nodes').addClass('first-load');
-				}*/
 			}, function (a, b, c) {
-				toastr["error"]("Error occured when fetching data for nodes")
-			}, function (doRequest) {
-				setInterval(doRequest, ajaxPullDelay * 1000);
+				toastr.error("Error occured when fetching data for nodes")
+			}, function (doProcess) {
+				return setTimeout(doProcess, ajaxPullDelay * 1000);
 			});
 
 			// prepare ajax pull for items, grid
-			registerAjaxPullFor('items', {}, function (res) {
+			registerAjaxPullFor('items', function () { 
+				return {
+					search: $sectionItemsGrid.find('.nav-search .input-search').val()
+				};
+			}, function (res) {
 				if (!res.success) {
 					return;
 				}
@@ -305,8 +267,8 @@
 					}).toArray(),
 					pageSize: $itemGrid.dataSource.pageSize()
 				}));
-			}, null, function (doRequest) {
-				setInterval(doRequest, ajaxPullDelay * 1000);
+			}, null, function (doProcess) {
+				return setTimeout(doProcess, ajaxPullDelay * 1000);
 			});
 		};
 
@@ -323,6 +285,20 @@
 					$sectionNodesChart.find('.chart').data('kendoChart').redraw();
 				}, 500);
 			});
+
+			$body.find('.btn-search').on('click', function () {
+				var what = $(this).attr('data-ajax');
+
+				clearTimeout(timeoutFor[what]);
+				ajaxPullFor[what]();
+			});
+
+			$body.find('.input-search').on('keyup', function (e) {
+				if (e.keyCode !== 13)
+					return;
+
+				$(this).closest('.nav-search').find('.btn-search').trigger('click');
+			});
 		};
 	};
 
@@ -332,18 +308,9 @@
 		main.init();
 		main.registerAjaxPull();
 		main.registerEventListener();
+
+		setTimeout(function () {
+			toastr.info("Welcome to MQ Monitor");
+		}, 1000 * 1);
 	});
 }());
-
-
-var rez = {
-	success: true,
-	data: {
-		grid: [
-			{ Key: 'name', Value: 'noval', Created: '12-12-2015', Expiry: '6m 2s' },
-			{ Key: 'name', Value: 'agung', Created: '08-11-2015', Expiry: '9m 12s' },
-			{ Key: 'name', Value: 'prayogo', Created: '10-10-2015', Expiry: '12m 12s' }
-		]
-	}
-}
-

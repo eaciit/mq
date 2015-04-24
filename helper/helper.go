@@ -62,3 +62,17 @@ func FormatDuration(duration time.Duration) string {
 	seconds := int(math.Floor(math.Mod(math.Mod(duration.Seconds(), 3600), 60)))
 	return fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
 }
+
+func Errorable(err error, callbacks ...func()) {
+	if err != nil {
+		fmt.Printf("Error %s\n", err.Error())
+	}
+
+	if len(callbacks) > 0 {
+		callbacks[0]()
+	}
+}
+
+func AsString(val interface{}) string {
+	return fmt.Sprintf("%v", val)
+}

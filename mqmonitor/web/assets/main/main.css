@@ -41,10 +41,15 @@ body {
       padding-top: 6px;
       padding-left: 5px;
       color: #5F5F5F; }
-  body .main .section.section-items-grid .selector {
-    padding-bottom: 15px; }
-    body .main .section.section-items-grid .selector label {
-      font-weight: normal; }
+  body .main .section .nav-search {
+    padding: 0px 0px 15px; }
+    body .main .section .nav-search .input-group {
+      padding: 0px; }
+      body .main .section .nav-search .input-group input {
+        width: 40%;
+        max-width: 300px; }
+      body .main .section .nav-search .input-group .input-search {
+        margin-right: 10px; }
   body .main .section .panel {
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px; }
