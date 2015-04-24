@@ -17,7 +17,7 @@ import (
 const (
 	ReconnectDelay   time.Duration = 3
 	ConnectionTimout time.Duration = time.Second * 10
-	ItemsLimit       int           = 10
+	ItemsLimit       int           = 50
 )
 
 var (
