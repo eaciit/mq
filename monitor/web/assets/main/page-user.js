@@ -50,7 +50,9 @@
 					var $userGrid = $sectionUser.find('.grid').data('kendoGrid');
 
 					$userGrid.setDataSource(new kendo.data.DataSource({
-						data: res.data.grid,
+						data: Lazy(res.data.grid).sortBy(function (d) { 
+							return d.UserName; 
+						}).toArray(),
 						pageSize: $userGrid.dataSource.pageSize()
 					}));
 				})

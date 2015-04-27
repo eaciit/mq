@@ -210,8 +210,8 @@ func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 			}
 
 			isExist := (len(searchKeyword) == 0)
-			for _, v := range dataNode {
-				if strings.Contains(strings.ToLower(AsString(v)), searchKeyword) {
+			for _, w := range dataNode {
+				if strings.Contains(strings.ToLower(AsString(w)), searchKeyword) {
 					isExist = true
 					break
 				}
@@ -244,26 +244,12 @@ func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 	}
 
 	if r.Method == "GET" {
-		// var items map[string]MqMsg
+		var users []MqUser
 
-		// if success := rpcDo(w, client, func() error {
-		// 	return client.CallDecode("Items", "", &items)
-		// }); !success {
-		// 	return
-		// }
-
-		users := make([]map[string]interface{}, 3)
-		users[0] = map[string]interface{}{
-			"UserName": "Noval Agung Prayogo",
-			"Password": "ajjqwem,r,mnd",
-		}
-		users[1] = map[string]interface{}{
-			"UserName": "The Dark Knight",
-			"Password": "sdfdsfff",
-		}
-		users[2] = map[string]interface{}{
-			"UserName": "Gandalft the White",
-			"Password": "sdfsfsf,r,mnd",
+		if success := rpcDo(w, client, func() error {
+			return client.CallDecode("Users", "", &users)
+		}); !success {
+			return
 		}
 
 		searchKeyword := strings.ToLower(r.FormValue("search"))
@@ -271,12 +257,16 @@ func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 
 		for _, v := range users {
 			dataUser := map[string]interface{}{
-				"UserName": v["UserName"],
+				"UserName": v.UserName,
 			}
 
 			isExist := (len(searchKeyword) == 0)
-			for _, v := range dataUser {
-				if strings.Contains(strings.ToLower(AsString(v)), searchKeyword) {
+			for _, w := range dataUser {
+				if w == "Password" {
+					continue
+				}
+
+				if strings.Contains(strings.ToLower(AsString(w)), searchKeyword) {
 					isExist = true
 					break
 				}

@@ -90,6 +90,12 @@ func (r *MqRPC) Nodes(key string, result *MqMsg) error {
 	return e
 }
 
+func (r *MqRPC) Users(key string, result *MqMsg) error {
+	buf, e := Encode(r.users)
+	result.Value = buf.Bytes()
+	return e
+}
+
 func (r *MqRPC) findNode(serverName string, port int) (int, Node) {
 	found := false
 	for i := 0; i < len(r.nodes) && !found; i++ {
