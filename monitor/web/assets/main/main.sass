@@ -17,18 +17,27 @@
 .no-margin
 	margin: 0px !important
 
-.k-grid
-	thead.k-grid-header
-		tr
-			th[role=columnheader][data-colspan], 
-			th[data-field=DataCount], 
-			th[data-field=DataSize],
-			th[data-field=AllocatedSize], 
-			th[data-field=StartTime],
-			th[data-field=Duration],
-			th[data-field=Created],
-			th[data-field=Expiry]
-				text-align: center
+[data-page=index]
+	.k-grid
+		thead.k-grid-header
+			tr
+				th[role=columnheader][data-colspan], 
+				th[data-field=DataCount], 
+				th[data-field=DataSize],
+				th[data-field=AllocatedSize], 
+				th[data-field=StartTime],
+				th[data-field=Duration],
+				th[data-field=Created],
+				th[data-field=Expiry]
+					text-align: center
+
+[data-page=user]
+	.k-grid
+		thead.k-grid-header
+			tr
+				th:last-child
+					text-align: center
+
 
 // backbone
 
@@ -44,6 +53,9 @@ body
 			background-color: white
 			border-bottom: 1px solid #ccc
 			@include box-shadow(0, 1px, 2px, rgba(0,0,0,.1))
+
+			.pull-left
+				cursor: pointer
 
 			.logo
 				height: 40px

@@ -1,0 +1,24 @@
+{{define "user"}}
+{{template "head"}}
+<!-- include res/page-user -->
+<script src="/res/main/page-user.js"></script>
+
+<div class="col-md-12" data-page="user">
+	<div class="col-md-12 section section-user">
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<i class="fa fa-user"></i> User Management
+			</div>
+			<div class="panel-body">
+				{{template "search"}}
+				<div class="row no-padding no-margin">
+					<div class="grid"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+</div>
+{{template "foot"}}
+{{end}}
