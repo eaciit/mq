@@ -1,7 +1,7 @@
 (function () {
 	'use strict';
 
-	var Main = function () { 
+	var Index = function () { 
 		var self = this;
 		var $body = $('body');
 		var $sectionNodesGrid = $body.find('.section-nodes-grid');
@@ -54,10 +54,6 @@
 
 		// initiate all components
 		this.init = function () {
-			// toastr init
-			toastr.options.closeButton = true
-			toastr.options.positionClass = 'toast-bottom-right';
-
 			// notify about delay every some minutes
 			setInterval(function () {
 				toastr.error('data refreshed every ' + ajaxPullDelay + ' seconds');
@@ -181,8 +177,6 @@
 						attributes: { style: 'text-align: center;' } },
 				]
 			});
-
-			$body.find('.menu-nav .page-' + $body.find("[data-page]").attr("data-page")).addClass('active');
 		};
 
 		// register ajax pull, 
@@ -307,10 +301,10 @@
 
 	// start the magic
 	$(function () {
-		var main = new Main();
-		main.init();
-		main.registerAjaxPull();
-		main.registerEventListener();
+		var index = new Index();
+		index.init();
+		index.registerAjaxPull();
+		index.registerEventListener();
 
 		setTimeout(function () {
 			toastr.info("Welcome to MQ Monitor");

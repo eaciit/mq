@@ -18,11 +18,13 @@ const (
 	ReconnectDelay   time.Duration = 3
 	ConnectionTimout time.Duration = time.Second * 10
 	ItemsLimit       int           = 50
+	BaseView         string        = "monitor/web/"
+	DevelopmentMode  bool          = true
 )
 
 var (
 	ConnectionServerHost string
-	Layout               *template.Template = GetTemplateView("mqmonitor/web/views/*")
+	Layout               *template.Template = GetTemplateView(BaseView + "views/*")
 )
 
 type (
@@ -40,11 +42,14 @@ func (m *MqMonitor) Start() {
 	client, err = connect()
 	Errorable(err)
 
-	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView("mqmonitor/web/assets")))))
+	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView(BaseView+"assets")))))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Layout = GetTemplateView("mqmonitor/web/views/*") // enable only for dev purpose
-		_ = Layout.ExecuteTemplate(w, "index", nil)
+		ExecuteTemplate(w, "index", nil)
+	})
+
+	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		ExecuteTemplate(w, "user", nil)
 	})
 
 	http.HandleFunc("/data/nodes", func(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +58,10 @@ func (m *MqMonitor) Start() {
 
 	http.HandleFunc("/data/items", func(w http.ResponseWriter, r *http.Request) {
 		dataItems(w, r, client, err)
+	})
+
+	http.HandleFunc("/data/users", func(w http.ResponseWriter, r *http.Request) {
+		dataUsers(w, r, client, err)
 	})
 
 	fmt.Printf("starting http at :%d, connecting to master %s\n", m.port, ConnectionServerHost)
@@ -201,8 +210,8 @@ func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 			}
 
 			isExist := (len(searchKeyword) == 0)
-			for _, v := range dataNode {
-				if strings.Contains(strings.ToLower(AsString(v)), searchKeyword) {
+			for _, w := range dataNode {
+				if strings.Contains(strings.ToLower(AsString(w)), searchKeyword) {
 					isExist = true
 					break
 				}
@@ -226,8 +235,86 @@ func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 	PrintJSON(w, true, make([]interface{}, 0), "")
 }
 
+func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+	w.Header().Set("Content-type", "application/json")
+	r.ParseForm()
+
+	if isServerAlive(w, r, client) == false {
+		return
+	}
+
+	if r.Method == "GET" {
+		var users []MqUser
+
+		if success := rpcDo(w, client, func() error {
+			return client.CallDecode("Users", "", &users)
+		}); !success {
+			return
+		}
+
+		searchKeyword := strings.ToLower(r.FormValue("search"))
+		var resultGrid []map[string]interface{}
+
+		for _, v := range users {
+			dataUser := map[string]interface{}{
+				"UserName": v.UserName,
+			}
+
+			isExist := (len(searchKeyword) == 0)
+			for _, w := range dataUser {
+				if w == "Password" {
+					continue
+				}
+
+				if strings.Contains(strings.ToLower(AsString(w)), searchKeyword) {
+					isExist = true
+					break
+				}
+			}
+
+			if isExist {
+				resultGrid = append(resultGrid, dataUser)
+			}
+		}
+
+		result := map[string]interface{}{
+			"grid": resultGrid,
+		}
+
+		PrintJSON(w, true, result, "")
+		return
+	} else if r.Method == "POST" {
+		username := strings.ToLower(r.FormValue("username"))
+		password := strings.ToLower(r.FormValue("password"))
+
+		if success := rpcDo(w, client, func() error {
+			_, e := client.Call("AddUser", MqMsg{
+				Key:   username,
+				Value: password,
+			})
+
+			return e
+		}); !success {
+			return
+		}
+
+		PrintJSON(w, true, make([]interface{}, 0), "")
+		return
+	}
+
+	PrintJSON(w, true, make([]interface{}, 0), "")
+}
+
 func connect() (*MqClient, error) {
 	return NewMqClient(ConnectionServerHost, ConnectionTimout)
+}
+
+func ExecuteTemplate(w http.ResponseWriter, page string, data interface{}) {
+	if DevelopmentMode {
+		Layout = GetTemplateView(BaseView + "views/*")
+	}
+
+	Layout.ExecuteTemplate(w, page, data)
 }
 
 func rpcDo(w http.ResponseWriter, client *MqClient, fn FuncParam) bool {

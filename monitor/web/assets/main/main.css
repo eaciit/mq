@@ -8,15 +8,28 @@
 .no-margin {
   margin: 0px !important; }
 
-.k-grid thead.k-grid-header tr th[role=columnheader][data-colspan],
-.k-grid thead.k-grid-header tr th[data-field=DataCount],
-.k-grid thead.k-grid-header tr th[data-field=DataSize],
-.k-grid thead.k-grid-header tr th[data-field=AllocatedSize],
-.k-grid thead.k-grid-header tr th[data-field=StartTime],
-.k-grid thead.k-grid-header tr th[data-field=Duration],
-.k-grid thead.k-grid-header tr th[data-field=Created],
-.k-grid thead.k-grid-header tr th[data-field=Expiry] {
+.loader {
+  text-align: center;
+  margin-top: 15px; }
+
+[data-page=index] .section .k-grid thead.k-grid-header tr th[role=columnheader][data-colspan],
+[data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=DataCount],
+[data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=DataSize],
+[data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=AllocatedSize],
+[data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=StartTime],
+[data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=Duration],
+[data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=Created],
+[data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=Expiry] {
   text-align: center; }
+
+[data-page=user] .section-user .k-grid thead.k-grid-header tr th:last-child {
+  text-align: center; }
+[data-page=user] .section-insert .nav-menu {
+  text-align: center;
+  margin-bottom: 15px; }
+[data-page=user] .section-insert .form {
+  width: 400px !important;
+  margin: 0px auto !important; }
 
 body {
   font-size: 12px;
@@ -30,6 +43,8 @@ body {
     -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+    body .main .page-header .pull-left {
+      cursor: pointer; }
     body .main .page-header .logo {
       height: 40px; }
     body .main .page-header h1 {
