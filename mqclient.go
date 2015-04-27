@@ -80,6 +80,20 @@ func main() {
 			s, e := c.CallString("GetLogData", msg)
 			handleError(e)
 			fmt.Println(s)
+		} else if lowerCommand == "adduser" {
+			//--- this to handle set command
+			commandParts := strings.Split(command, " ")
+			userName := commandParts[1]
+			password := strings.Join(commandParts[2:], " ")
+			msg := MqMsg{Key: userName, Value: password}
+			_, e := c.Call("AddUser", msg)
+			if e != nil {
+				fmt.Println("Unable to store message: " + e.Error())
+			}
+		} else if lowerCommand == "getlistusers" {
+			s, e := c.CallString("GetListUsers", "")
+			handleError(e)
+			fmt.Printf(s)
 		} else {
 			errorMsg := "Unable to find command " + command
 			//c.CallToLog(errorMsg,"ERROR")

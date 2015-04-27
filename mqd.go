@@ -76,6 +76,9 @@ func main() {
 		}
 		//-- c.Call("SetHost",&ServerConfig{})
 	}
+	if *hostFlag == "" {
+		c.CallString("RegisterExistingUser", "")
+	}
 
 	status := ""
 	t0 := time.Now()
