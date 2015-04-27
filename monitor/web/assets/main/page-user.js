@@ -7,6 +7,7 @@
 		var $sectionUser = $body.find('.section-user');
 		var $sectionInsert = $body.find('.section-insert');
 		var $window = $(window);
+		var userEdit = false;
 
 		this.init = function () {
 			$sectionUser.find('.grid').kendoGrid({
@@ -22,10 +23,17 @@
 				columns: [
 					{ field: 'UserName', title: 'User Name' },
 					{ title: 'Options', width: 130, 
-						template: '<button class="btn btn-xs btn-primary row-edit"><i class="fa fa-edit"></i>&nbsp;edit</button>&nbsp;<button class="btn btn-xs btn-danger row-delete"><i class="fa fa-remove"></i>&nbsp;delete</button>',
+						template: '<button class="btn btn-xs btn-primary btn-row-edit"><i class="fa fa-edit"></i>&nbsp;edit</button>&nbsp;<button class="btn btn-xs btn-danger btn-row-delete"><i class="fa fa-remove"></i>&nbsp;delete</button>',
 						attributes: { style: 'text-align: center' }
 				 	}
 				]
+			});
+
+			$sectionInsert.find('[name=role]').kendoDropDownList({
+				dataSource: {
+					data: ['admin']
+				},
+				optionLabel: 'Select role'
 			});
 
 			$sectionUser.show();
@@ -73,7 +81,49 @@
 				$(this).closest('.nav-search').find('.btn-search').trigger('click');
 			});
 
+			$sectionUser.find('.k-grid').on('click', '.btn-row-edit', function () {
+				var $form = $sectionInsert.find('form');
+				var uid = $(this).closest('tr[data-uid]').attr('data-uid');
+				var data = $sectionUser.find('.k-grid').data('kendoGrid').dataSource.data();
+				var rowData = Lazy(data).find(function (d) { return d.uid === uid; });
+				rowData.Role = 'admin';
+
+				$sectionUser.find('.btn-add').trigger('click');
+
+				userEdit = rowData.UserName;
+				$form.find('[name=username]').val(rowData.UserName);
+				$form.find('[name=role]').data('kendoDropDownList').value(rowData.Role);
+			});
+
+			$sectionUser.find('.k-grid').on('click', '.btn-row-delete', function () {
+				var uid = $(this).closest('tr[data-uid]').attr('data-uid');
+				var data = $sectionUser.find('.k-grid').data('kendoGrid').dataSource.data();
+				var rowData = Lazy(data).find(function (d) { return d.uid === uid; });
+
+				$.ajax({
+					url: '/data/users',
+					data: { username: rowData.UserName },
+					type: 'delete',
+					dataType: 'json'
+				})
+				.success(function (res) {
+					if (!res.success) {
+						toastr.error(res.message);
+						return;
+					}
+
+					toastr.success(rowData.UserName + ' successfully deleted');
+				})
+				.error(function (a, b, c) {
+					toastr.error('error when deleting user ' + rowData.UserName);
+				});
+
+				console.log('delete');
+				console.log(rowData);
+			});
+
 			$sectionUser.find('.btn-add').on('click', function () {
+				userEdit = false;
 				$sectionInsert.find('.btn-reset').trigger('click');
 				$sectionUser.hide();
 				$sectionInsert.show();
@@ -87,7 +137,8 @@
 			$sectionInsert.find('.btn-reset').on('click', function () {
 				$(this).closest('.nav-menu').next().find('input').each(function (i, e) {
 					$(e).val('');
-				})
+				});
+				$sectionInsert.find('[name=role]').data('kendoDropDownList').value('');
 			});
 
 			$sectionInsert.find('.btn-save').on('click', function () {
@@ -96,6 +147,7 @@
 				var username = $form.find('[name=username]').val();
 				var password = $form.find('[name=password]').val();
 				var passwordConfirmation = $form.find('[name=password-confirmation]').val();
+				var role = $form.find('[name=role]').data('kendoDropDownList').value();
 
 				var isValid = (function (inputs) {
 					for (var input in inputs) {
@@ -103,8 +155,11 @@
 							if (inputs[input].length === 0) {
 								toastr.error(input + ' cannot be empty');
 								return false;
-							} else if (inputs[input].length < 7) {
-								toastr.error(input + ' need minimum 6 character');
+							} else if (inputs[input].length < 3) {
+								if (input === 'role')
+									continue;
+								
+								toastr.error(input + ' need minimum 3 character');
 								return false;
 							}
 						}
@@ -114,7 +169,8 @@
 				}({
 					username: username,
 					password: password,
-					'password confirmation': passwordConfirmation
+					'password confirmation': passwordConfirmation,
+					role: role
 				}));
 
 				if (!isValid)
@@ -132,7 +188,12 @@
 
 				$.ajax({
 					url: 'data/users',
-					data: { username: username, password: password },
+					data: { 
+						username: username, 
+						password: password, 
+						role: role,
+						edit: (userEdit !== false)
+					},
 					type: 'post',
 					dataType: 'json'
 				})
@@ -148,7 +209,11 @@
 							return;
 						}
 
-						toastr.success('user ' + username + ' saved!');
+						if (userEdit !== false)
+							toastr.success('changes saved!');
+						else
+							toastr.success('user ' + username + ' saved!');
+
 						$sectionInsert.find('.btn-back').trigger('click');
 						$(this).closest('.nav-search').find('.btn-search').trigger('click');
 					}, 500);

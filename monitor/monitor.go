@@ -286,6 +286,12 @@ func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 	} else if r.Method == "POST" {
 		username := strings.ToLower(r.FormValue("username"))
 		password := strings.ToLower(r.FormValue("password"))
+		isEdit := strings.ToLower(r.FormValue("edit"))
+
+		if isEdit == "true" {
+			PrintJSON(w, false, "", "Currently edit not supported")
+			return
+		}
 
 		if success := rpcDo(w, client, func() error {
 			_, e := client.Call("AddUser", MqMsg{
@@ -300,6 +306,8 @@ func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 
 		PrintJSON(w, true, make([]interface{}, 0), "")
 		return
+	} else if r.Method == "DELETE" {
+		PrintJSON(w, false, "", "Currently delete not supported")
 	}
 
 	PrintJSON(w, true, make([]interface{}, 0), "")

@@ -30,6 +30,8 @@
 [data-page=user] .section-insert .form {
   width: 400px !important;
   margin: 0px auto !important; }
+  [data-page=user] .section-insert .form .k-dropdown .k-dropdown-wrap {
+    padding: 3px 0px 2px 6px; }
 
 body {
   font-size: 12px;
