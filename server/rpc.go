@@ -1,12 +1,14 @@
 package server
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
 	"math"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -40,8 +42,14 @@ type MqRPC struct {
 	Config  *ServerConfig
 	Host    *ServerConfig
 
+	users []MqUser
 	nodes []Node
 	exit  bool
+}
+
+type MqUser struct {
+	UserName string
+	Password string
 }
 
 func (n *Node) ActiveDuration() time.Duration {
@@ -90,6 +98,75 @@ func (r *MqRPC) findNode(serverName string, port int) (int, Node) {
 		}
 	}
 	return -1, Node{}
+}
+
+func (r *MqRPC) findUser(userName string) int {
+	found := false
+	for i := 0; i < len(r.users) && !found; i++ {
+		if r.users[i].UserName == userName {
+			return i
+		}
+	}
+	return -1
+}
+
+func (r *MqRPC) GetListUsers(key string, result *MqMsg) error {
+
+	listUser := fmt.Sprintf("UserName \t|Password \n")
+	for _, u := range r.users {
+		listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
+	}
+
+	(*result).Value = listUser
+	return nil
+}
+
+func (r *MqRPC) RegisterExistingUser(key string, result *MqMsg) error {
+	(*result).Value = ""
+	file, err := os.Open("user/user.txt")
+	if err != nil {
+		fmt.Println("Can't open user file!")
+		return nil
+	}
+	reader := bufio.NewReader(file)
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		row := scanner.Text()
+		rowSplit := strings.Split(row, "|")
+		existingUser := MqUser{}
+		existingUser.UserName = rowSplit[0]
+		existingUser.Password = rowSplit[1]
+		r.users = append(r.users, existingUser)
+		infoMsg := fmt.Sprintf("Register User: %s", rowSplit[0])
+		fmt.Println(infoMsg)
+	}
+	return nil
+}
+
+func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
+	//check existing user
+	userName := value.Key
+	password := value.Value.(string)
+	userIndex := r.findUser(userName)
+	userFound := userIndex >= 0
+	if userFound {
+		errorMsg := "Unable to add user:" + userName + ". It is already exist"
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	newUser := MqUser{}
+	newUser.UserName = userName
+	newUser.Password = password
+	r.users = append(r.users, newUser)
+
+	//*result = newUser
+
+	//save user to file
+	SaveUser(userName, password)
+
+	Logging("New User: "+userName+" has been added with password: "+password, "INFO")
+	return nil
 }
 
 func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
