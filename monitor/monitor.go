@@ -283,6 +283,23 @@ func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 
 		PrintJSON(w, true, result, "")
 		return
+	} else if r.Method == "POST" {
+		username := strings.ToLower(r.FormValue("username"))
+		password := strings.ToLower(r.FormValue("password"))
+
+		if success := rpcDo(w, client, func() error {
+			_, e := client.Call("AddUser", MqMsg{
+				Key:   username,
+				Value: password,
+			})
+
+			return e
+		}); !success {
+			return
+		}
+
+		PrintJSON(w, true, make([]interface{}, 0), "")
+		return
 	}
 
 	PrintJSON(w, true, make([]interface{}, 0), "")

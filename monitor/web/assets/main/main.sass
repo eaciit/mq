@@ -17,27 +17,40 @@
 .no-margin
 	margin: 0px !important
 
+.loader
+	text-align: center
+	margin-top: 15px
+
 [data-page=index]
-	.k-grid
-		thead.k-grid-header
-			tr
-				th[role=columnheader][data-colspan], 
-				th[data-field=DataCount], 
-				th[data-field=DataSize],
-				th[data-field=AllocatedSize], 
-				th[data-field=StartTime],
-				th[data-field=Duration],
-				th[data-field=Created],
-				th[data-field=Expiry]
-					text-align: center
+	.section
+		.k-grid
+			thead.k-grid-header
+				tr
+					th[role=columnheader][data-colspan], 
+					th[data-field=DataCount], 
+					th[data-field=DataSize],
+					th[data-field=AllocatedSize], 
+					th[data-field=StartTime],
+					th[data-field=Duration],
+					th[data-field=Created],
+					th[data-field=Expiry]
+						text-align: center
 
 [data-page=user]
-	.k-grid
-		thead.k-grid-header
-			tr
-				th:last-child
-					text-align: center
+	.section-user
+		.k-grid
+			thead.k-grid-header
+				tr
+					th:last-child
+						text-align: center
+	.section-insert
+		.nav-menu
+			text-align: center
+			margin-bottom: 15px
 
+		.form
+			width: 400px !important
+			margin: 0px auto !important
 
 // backbone
 

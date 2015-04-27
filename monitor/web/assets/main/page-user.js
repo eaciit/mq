@@ -5,6 +5,7 @@
 		var self = this;
 		var $body = $('body');
 		var $sectionUser = $body.find('.section-user');
+		var $sectionInsert = $body.find('.section-insert');
 		var $window = $(window);
 
 		this.init = function () {
@@ -24,8 +25,12 @@
 						template: '<button class="btn btn-xs btn-primary row-edit"><i class="fa fa-edit"></i>&nbsp;edit</button>&nbsp;<button class="btn btn-xs btn-danger row-delete"><i class="fa fa-remove"></i>&nbsp;delete</button>',
 						attributes: { style: 'text-align: center' }
 				 	}
-				],
+				]
 			});
+
+			$sectionUser.show();
+			$sectionInsert.hide();
+			$sectionInsert.find('.loader').hide();
 		}
 
 		// register event listener
@@ -66,6 +71,95 @@
 					return;
 
 				$(this).closest('.nav-search').find('.btn-search').trigger('click');
+			});
+
+			$sectionUser.find('.btn-add').on('click', function () {
+				$sectionInsert.find('.btn-reset').trigger('click');
+				$sectionUser.hide();
+				$sectionInsert.show();
+			});
+
+			$sectionInsert.find('.btn-back').on('click', function () {
+				$sectionInsert.hide();
+				$sectionUser.show();
+			});
+
+			$sectionInsert.find('.btn-reset').on('click', function () {
+				$(this).closest('.nav-menu').next().find('input').each(function (i, e) {
+					$(e).val('');
+				})
+			});
+
+			$sectionInsert.find('.btn-save').on('click', function () {
+				var $loader = $(this).closest('.nav-menu').next().find('.loader');
+				var $form = $(this).closest('.nav-menu').next().find('form');
+				var username = $form.find('[name=username]').val();
+				var password = $form.find('[name=password]').val();
+				var passwordConfirmation = $form.find('[name=password-confirmation]').val();
+
+				var isValid = (function (inputs) {
+					for (var input in inputs) {
+						if (inputs.hasOwnProperty(input)) {
+							if (inputs[input].length === 0) {
+								toastr.error(input + ' cannot be empty');
+								return false;
+							} else if (inputs[input].length < 7) {
+								toastr.error(input + ' need minimum 6 character');
+								return false;
+							}
+						}
+					}
+
+					return true;
+				}({
+					username: username,
+					password: password,
+					'password confirmation': passwordConfirmation
+				}));
+
+				if (!isValid)
+					return;
+
+				if (password !== passwordConfirmation) {
+					$form.find('[name=password]').val('');
+					$form.find('[name=password-confirmation]').val('');
+					toastr.error('password do not match');
+					return;
+				}
+
+				$loader.show();
+				$form.hide();
+
+				$.ajax({
+					url: 'data/users',
+					data: { username: username, password: password },
+					type: 'post',
+					dataType: 'json'
+				})
+				.success(function (res) {
+					setTimeout(function () {
+						$loader.hide();
+						$form.show();
+						
+						if (!res.success) {
+							toastr.error(res.message);
+							$form.find('[name=password]').val('');
+							$form.find('[name=password-confirmation]').val('');
+							return;
+						}
+
+						toastr.success('user ' + username + ' saved!');
+						$sectionInsert.find('.btn-back').trigger('click');
+						$(this).closest('.nav-search').find('.btn-search').trigger('click');
+					}, 500);
+				})
+				.error(function (a, b, c) {
+					setTimeout(function () {
+						$loader.hide();
+						$form.show();
+						toastr.error('error occured when saving user');
+					}, 500);
+				});
 			});
 		};
 	};
