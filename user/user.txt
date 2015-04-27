@@ -1,5 +1,2 @@
-eky|rahasia
-yoga|noval
-test|ok
-eaciit|Password.1
-noval|rahasia
+eky|47bce5c74f589f4867dbd57e9ca9f808|admin
+pradhana|ac43724f16e9241d990427ab7c8f4228|admin

@@ -90,6 +90,29 @@ func main() {
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			}
+		} else if lowerCommand == "deleteuser" {
+			//--- this to handle set command
+			commandParts := strings.Split(command, " ")
+			userName := commandParts[1]
+			msg := MqMsg{Key: userName, Value: userName}
+			i, e := c.Call("DeleteUser", msg)
+			if e != nil {
+				fmt.Println("Unable to store message: " + e.Error())
+			} else {
+				fmt.Println(i.Value.(string))
+			}
+		} else if lowerCommand == "changepassword" {
+			//--- this to handle set command
+			commandParts := strings.Split(command, " ")
+			userName := commandParts[1]
+			password := strings.Join(commandParts[2:], " ")
+			msg := MqMsg{Key: userName, Value: password}
+			i, e := c.Call("ChangePassword", msg)
+			if e != nil {
+				fmt.Println("Unable to store message: " + e.Error())
+			} else {
+				fmt.Println(i.Value.(string))
+			}
 		} else if lowerCommand == "getlistusers" {
 			s, e := c.CallString("GetListUsers", "")
 			handleError(e)

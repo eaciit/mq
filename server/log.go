@@ -2,7 +2,6 @@ package server
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -102,19 +101,4 @@ func GetLogFileData(dateStr string, timeStr string) (string, error) {
 		//logInfo = logInfo + "\n" + logTimeStr + " -- " + timeStr + " (" + timeDiff + ")"
 	}
 	return logInfo, nil
-}
-
-func SaveUser(userName string, password string) error {
-	file, err := os.OpenFile("user/user.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalln("Failed to open user file")
-	}
-
-	n, err := io.WriteString(file, userName+"|"+password+"\n")
-	if err != nil {
-		errorMsg := fmt.Sprintf("Error saving user to file, %s:%s", n, err)
-		Logging(errorMsg, "ERROR")
-	}
-	file.Close()
-	return nil
 }

@@ -2,11 +2,15 @@ package server
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
+	"io"
+	"log"
 	"math"
 	"os"
 	"reflect"
@@ -50,6 +54,7 @@ type MqRPC struct {
 type MqUser struct {
 	UserName string
 	Password string
+	Role     string
 }
 
 func (n *Node) ActiveDuration() time.Duration {
@@ -142,6 +147,7 @@ func (r *MqRPC) RegisterExistingUser(key string, result *MqMsg) error {
 		existingUser := MqUser{}
 		existingUser.UserName = rowSplit[0]
 		existingUser.Password = rowSplit[1]
+		existingUser.Role = rowSplit[2]
 		r.users = append(r.users, existingUser)
 		infoMsg := fmt.Sprintf("Register User: %s", rowSplit[0])
 		fmt.Println(infoMsg)
@@ -149,10 +155,90 @@ func (r *MqRPC) RegisterExistingUser(key string, result *MqMsg) error {
 	return nil
 }
 
+func GetMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func SaveUserToFile(userName string, password string, role string) error {
+	file, err := os.OpenFile("user/user.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalln("Failed to open user file")
+	}
+
+	n, err := io.WriteString(file, userName+"|"+password+"|"+role+"\n")
+	if err != nil {
+		errorMsg := fmt.Sprintf("Error saving user to file, %s:%s", n, err)
+		Logging(errorMsg, "ERROR")
+	}
+	file.Close()
+	return nil
+}
+
+func UpdateUserFile(r *MqRPC) {
+	//r := *MqRPC
+	file, err := os.OpenFile("user/user.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		log.Fatalln("Failed to open user file")
+	}
+	fileContent := ""
+	for _, u := range r.users {
+		fileContent = fileContent + u.UserName + "|" + u.Password + "|" + u.Role + "\n"
+	}
+	n, err := io.WriteString(file, fileContent)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Error update user to file, %s:%s", n, err)
+		Logging(errorMsg, "ERROR")
+	}
+	file.Close()
+}
+
+func (r *MqRPC) DeleteUser(value MqMsg, result *MqMsg) error {
+	UserName := value.Value.(string)
+	Users := []MqUser{}
+	for _, u := range r.users {
+		//listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
+		if u.UserName != UserName {
+			Users = append(Users, u)
+		}
+	}
+	r.users = Users
+	UpdateUserFile(r)
+	(*result).Value = fmt.Sprintf("User:%s has been deleted", UserName)
+	return nil
+}
+
+func (r *MqRPC) ChangePassword(value MqMsg, result *MqMsg) error {
+	UserName := value.Key
+	Password := GetMD5Hash(value.Value.(string))
+	Role := "admin"
+	userFound := false
+	for i, u := range r.users {
+		//listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
+		if u.UserName == UserName {
+			newUser := MqUser{}
+			newUser.UserName = UserName
+			newUser.Password = Password
+			newUser.Role = Role
+			r.users[i] = newUser
+			userFound = true
+		}
+	}
+	if userFound {
+		UpdateUserFile(r)
+		result.Value = "Password has changed successfully for user: " + UserName
+	} else {
+		result.Value = "Cant find user: " + UserName
+	}
+	return nil
+}
+
 func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	//check existing user
 	userName := value.Key
-	password := value.Value.(string)
+	password := GetMD5Hash(value.Value.(string))
+	role := "admin"
 	userIndex := r.findUser(userName)
 	userFound := userIndex >= 0
 	if userFound {
@@ -164,12 +250,13 @@ func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	newUser := MqUser{}
 	newUser.UserName = userName
 	newUser.Password = password
+	newUser.Role = role
 	r.users = append(r.users, newUser)
 
 	//*result = newUser
 
 	//save user to file
-	SaveUser(userName, password)
+	SaveUserToFile(userName, password, role)
 
 	Logging("New User: "+userName+" has been added with password: "+password, "INFO")
 	return nil
