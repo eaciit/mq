@@ -22,6 +22,7 @@
 				scrollable: false,
 				columns: [
 					{ field: 'UserName', title: 'User Name' },
+					{ field: 'Role', title: 'Role' },
 					{ title: 'Options', width: 130, 
 						template: '<button class="btn btn-xs btn-primary btn-row-edit"><i class="fa fa-edit"></i>&nbsp;edit</button>&nbsp;<button class="btn btn-xs btn-danger btn-row-delete"><i class="fa fa-remove"></i>&nbsp;delete</button>',
 						attributes: { style: 'text-align: center' }
@@ -90,6 +91,9 @@
 
 				$sectionUser.find('.btn-add').trigger('click');
 
+				$form.find('[name=username]').prop('disabled', !false);
+				$form.find('[name=role]').data('kendoDropDownList').enable(false);
+
 				userEdit = rowData.UserName;
 				$form.find('[name=username]').val(rowData.UserName);
 				$form.find('[name=role]').data('kendoDropDownList').value(rowData.Role);
@@ -100,9 +104,11 @@
 				var data = $sectionUser.find('.k-grid').data('kendoGrid').dataSource.data();
 				var rowData = Lazy(data).find(function (d) { return d.uid === uid; });
 
+				if (!confirm('Are you sure want to delete user ' + rowData.UserName + ' ?'))
+					return;
+
 				$.ajax({
-					url: '/data/users',
-					data: { username: rowData.UserName },
+					url: '/data/users?' + $.param({ username: rowData.UserName }),
 					type: 'delete',
 					dataType: 'json'
 				})
@@ -112,7 +118,8 @@
 						return;
 					}
 
-					toastr.success(rowData.UserName + ' successfully deleted');
+					$sectionUser.find('.btn-search').trigger('click');
+					toastr.success('user ' + rowData.UserName + ' successfully deleted');
 				})
 				.error(function (a, b, c) {
 					toastr.error('error when deleting user ' + rowData.UserName);
@@ -123,6 +130,10 @@
 			});
 
 			$sectionUser.find('.btn-add').on('click', function () {
+				var $form = $sectionInsert.find('form');
+				$form.find('[name=username]').prop('disabled', !true);
+				$form.find('[name=role]').data('kendoDropDownList').enable(true);
+
 				userEdit = false;
 				$sectionInsert.find('.btn-reset').trigger('click');
 				$sectionUser.hide();
@@ -192,6 +203,7 @@
 						username: username, 
 						password: password, 
 						role: role,
+						oldusername: (userEdit !== false ? userEdit : ''),
 						edit: (userEdit !== false)
 					},
 					type: 'post',
@@ -215,7 +227,9 @@
 							toastr.success('user ' + username + ' saved!');
 
 						$sectionInsert.find('.btn-back').trigger('click');
-						$(this).closest('.nav-search').find('.btn-search').trigger('click');
+						$sectionUser.find('.btn-search').trigger('click');
+
+						userEdit = false;
 					}, 500);
 				})
 				.error(function (a, b, c) {

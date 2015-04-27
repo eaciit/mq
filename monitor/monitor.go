@@ -258,6 +258,7 @@ func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 		for _, v := range users {
 			dataUser := map[string]interface{}{
 				"UserName": v.UserName,
+				"Role":     v.Role,
 			}
 
 			isExist := (len(searchKeyword) == 0)
@@ -284,12 +285,25 @@ func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 		PrintJSON(w, true, result, "")
 		return
 	} else if r.Method == "POST" {
+		oldUsername := strings.ToLower(r.FormValue("oldusername"))
 		username := strings.ToLower(r.FormValue("username"))
 		password := strings.ToLower(r.FormValue("password"))
+		// role = strings.ToLower(r.FormValue("role")) // not yet implemented
 		isEdit := strings.ToLower(r.FormValue("edit"))
 
 		if isEdit == "true" {
-			PrintJSON(w, false, "", "Currently edit not supported")
+			if success := rpcDo(w, client, func() error {
+				_, e := client.Call("ChangePassword", MqMsg{
+					Key:   oldUsername,
+					Value: password,
+				})
+
+				return e
+			}); !success {
+				return
+			}
+
+			PrintJSON(w, true, make([]interface{}, 0), "")
 			return
 		}
 
@@ -307,7 +321,21 @@ func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 		PrintJSON(w, true, make([]interface{}, 0), "")
 		return
 	} else if r.Method == "DELETE" {
-		PrintJSON(w, false, "", "Currently delete not supported")
+		username := strings.ToLower(r.FormValue("username"))
+
+		if success := rpcDo(w, client, func() error {
+			_, e := client.Call("DeleteUser", MqMsg{
+				Key:   username,
+				Value: username,
+			})
+
+			return e
+		}); !success {
+			return
+		}
+
+		PrintJSON(w, true, make([]interface{}, 0), "")
+		return
 	}
 
 	PrintJSON(w, true, make([]interface{}, 0), "")
