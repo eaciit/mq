@@ -53,7 +53,7 @@ func PrintJSON(w http.ResponseWriter, success bool, data interface{}, message st
 }
 
 func GetTemplateView(path string) *template.Template {
-	return template.Must(template.ParseGlob(GetView("mqmonitor/web/views/*")))
+	return template.Must(template.ParseGlob(GetView(path)))
 }
 
 func GetView(view string) string {

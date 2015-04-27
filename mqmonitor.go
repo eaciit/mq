@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/eaciit/mq/mqmonitor"
+	"github.com/eaciit/mq/monitor"
 )
 
 func main() {

@@ -18,11 +18,12 @@ const (
 	ReconnectDelay   time.Duration = 3
 	ConnectionTimout time.Duration = time.Second * 10
 	ItemsLimit       int           = 50
+	BaseView         string        = "monitor/web/"
 )
 
 var (
 	ConnectionServerHost string
-	Layout               *template.Template = GetTemplateView("mqmonitor/web/views/*")
+	Layout               *template.Template = GetTemplateView(BaseView + "views/*")
 )
 
 type (
@@ -40,10 +41,10 @@ func (m *MqMonitor) Start() {
 	client, err = connect()
 	Errorable(err)
 
-	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView("mqmonitor/web/assets")))))
+	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView(BaseView+"assets")))))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Layout = GetTemplateView("mqmonitor/web/views/*") // enable only for dev purpose
+		// Layout = GetTemplateView(BaseView+"views/*") // enable only for dev purpose
 		_ = Layout.ExecuteTemplate(w, "index", nil)
 	})
 
