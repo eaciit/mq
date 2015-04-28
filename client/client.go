@@ -9,6 +9,15 @@ import (
 
 type MqClient struct {
 	connection *rpc.Client
+	ClientInfo *ClientInfo
+}
+
+type ClientInfo struct {
+	username   string
+	password   string
+	role       string
+	IsLoggedIn bool
+	LastLogin  time.Time
 }
 
 func NewMqClient(dsn string, timeout time.Duration) (*MqClient, error) {
@@ -16,8 +25,16 @@ func NewMqClient(dsn string, timeout time.Duration) (*MqClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &MqClient{rpcClient}, nil
+	ci := ClientInfo{}
+	ci.IsLoggedIn = false
+
+	return &MqClient{rpcClient, &ci}, nil
 }
+
+// func (c *MqClient) SetClientInfo() (bool, error) {
+// 	c.clientInfo = ci
+// 	return false, nil
+// }
 
 func (c *MqClient) Close() {
 	c.connection.Close()
@@ -26,6 +43,27 @@ func (c *MqClient) Close() {
 func (c *MqClient) Call(op string, key interface{}) (*MqMsg, error) {
 	result := MqMsg{}
 	err := c.connection.Call("MqRPC."+op, key, &result)
+	return &result, err
+}
+
+func (c *MqClient) CallToLogin(key MqMsg) (*MqMsg, error) {
+	result := MqMsg{}
+	ci := ClientInfo{}
+	err := c.connection.Call("MqRPC.ClientLogin", key, &result)
+	if result.Value != "0" {
+		//login success
+		ci.IsLoggedIn = true
+		ci.username = key.Key
+		ci.password = key.Value.(string)
+		ci.role = result.Value.(string)
+		ci.LastLogin = time.Now()
+	} else {
+		ci.IsLoggedIn = false
+		ci.username = ""
+		ci.password = ""
+		ci.role = ""
+	}
+	c.ClientInfo = &ci
 	return &result, err
 }
 

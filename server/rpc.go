@@ -52,9 +52,10 @@ type MqRPC struct {
 }
 
 type MqUser struct {
-	UserName string
-	Password string
-	Role     string
+	UserName    string
+	Password    string
+	Role        string
+	DateCreated time.Time
 }
 
 func (n *Node) ActiveDuration() time.Duration {
@@ -148,6 +149,9 @@ func (r *MqRPC) RegisterExistingUser(key string, result *MqMsg) error {
 		existingUser.UserName = rowSplit[0]
 		existingUser.Password = rowSplit[1]
 		existingUser.Role = rowSplit[2]
+		layout := "Mon, 01/02/06, 03:04PM"
+		t, _ := time.Parse(layout, rowSplit[3])
+		existingUser.DateCreated = t
 		r.users = append(r.users, existingUser)
 		infoMsg := fmt.Sprintf("Register User: %s", rowSplit[0])
 		fmt.Println(infoMsg)
@@ -184,7 +188,7 @@ func UpdateUserFile(r *MqRPC) {
 	}
 	fileContent := ""
 	for _, u := range r.users {
-		fileContent = fileContent + u.UserName + "|" + u.Password + "|" + u.Role + "\n"
+		fileContent = fileContent + fmt.Sprintf("%s|%s|%s|%s\n", u.UserName, u.Password, u.Role, u.DateCreated)
 	}
 	n, err := io.WriteString(file, fileContent)
 	if err != nil {
@@ -221,6 +225,7 @@ func (r *MqRPC) ChangePassword(value MqMsg, result *MqMsg) error {
 			newUser.UserName = UserName
 			newUser.Password = Password
 			newUser.Role = Role
+			newUser.DateCreated = r.users[i].DateCreated
 			r.users[i] = newUser
 			userFound = true
 		}
@@ -234,11 +239,43 @@ func (r *MqRPC) ChangePassword(value MqMsg, result *MqMsg) error {
 	return nil
 }
 
+func (r *MqRPC) ClientLogin(value MqMsg, result *MqMsg) error {
+	UserName := value.Key
+	Password := GetMD5Hash(value.Value.(string))
+	Role := ""
+	userFound := false
+
+	if UserName == "root" && Password == GetMD5Hash("Password.1") {
+		userFound = true
+		Role = "root"
+	} else {
+		for _, u := range r.users {
+			//listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
+			if u.UserName == UserName {
+				if u.Password == Password {
+					userFound = true
+					Role = u.Role
+				}
+			}
+		}
+	}
+	if userFound {
+		result.Value = Role
+	} else {
+		result.Value = "0"
+	}
+	return nil
+}
+
 func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	//check existing user
-	userName := value.Key
+	splitKey := strings.Split(value.Key, "|")
+	userName := splitKey[0]
+	role := splitKey[1]
+	if role == "" {
+		role = "admin"
+	}
 	password := GetMD5Hash(value.Value.(string))
-	role := "admin"
 	userIndex := r.findUser(userName)
 	userFound := userIndex >= 0
 	if userFound {
@@ -251,12 +288,13 @@ func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	newUser.UserName = userName
 	newUser.Password = password
 	newUser.Role = role
+	newUser.DateCreated = time.Now()
 	r.users = append(r.users, newUser)
 
 	//*result = newUser
 
 	//save user to file
-	SaveUserToFile(userName, password, role)
+	UpdateUserFile(r)
 
 	Logging("New User: "+userName+" has been added with password: "+password, "INFO")
 	return nil
