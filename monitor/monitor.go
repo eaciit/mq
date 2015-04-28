@@ -180,35 +180,59 @@ func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err
 	}
 
 	if r.Method == "GET" {
-		// if clientInfo.IsLoggedIn {
-		// 	http.Redirect(w, r, "/", http.StatusFound)
-		// 	return
-		// }
-
-		executeTemplate(w, "console", nil)
-	} else if r.Method == "POST" {
-		// if clientInfo.IsLoggedIn {
-		// 	PrintJSON(w, false, "", "already logged in")
-		// 	return
-		// }
-
-		if success := rpcDo(w, client, func() error {
-			msg, err := client.Call("Get", MqMsg{
-				Key: r.FormValue("key"),
-			})
-
-			if err != nil {
-				return err
-			} else {
-				PrintJSON(w, true, msg.Value, "")
-			}
-
-			return err
-		}); !success {
+		if clientInfo.IsLoggedIn {
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 
-		PrintJSON(w, true, clientInfo, "")
+		executeTemplate(w, "console", nil)
+	} else if r.Method == "POST" {
+		if clientInfo.IsLoggedIn {
+			PrintJSON(w, false, "", "already logged in")
+			return
+		}
+
+		mode := strings.ToLower(r.FormValue("mode"))
+		owner := strings.ToLower(r.FormValue("owner"))
+		key := strings.ToLower(r.FormValue("key"))
+		value := strings.ToLower(r.FormValue("value"))
+
+		if owner == "" {
+			owner = "public"
+		}
+
+		keyParsed := fmt.Sprintf("%s|%s", owner, key)
+
+		if mode == "get" {
+			rpcDo(w, client, func() error {
+				msg, err := client.Call("Get", keyParsed)
+
+				if err == nil {
+					PrintJSON(w, true, msg.Value, "")
+				}
+
+				return err
+			})
+
+			return
+		} else if mode == "set" {
+			rpcDo(w, client, func() error {
+				_, err := client.Call("Set", MqMsg{
+					Key:   keyParsed,
+					Value: value,
+				})
+
+				if err == nil {
+					PrintJSON(w, true, "", "")
+				}
+
+				return err
+			})
+
+			return
+		}
+
+		PrintJSON(w, false, "", "Bad request")
 		return
 	}
 }
