@@ -43,6 +43,7 @@ type Node struct {
 type MqRPC struct {
 	dataMap map[string]int
 	items   map[string]MqMsg
+	tables  map[string]MqTable
 	Config  *ServerConfig
 	Host    *ServerConfig
 
@@ -72,6 +73,7 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 	m := new(MqRPC)
 	m.Config = cfg
 	m.items = make(map[string]MqMsg)
+	m.tables = make(map[string]MqTable)
 	m.nodes = []Node{Node{cfg, 0, 0, nil, time.Now(), time.Now(), false, int64(cfg.Memory)}}
 	m.Host = cfg
 	return m
