@@ -63,7 +63,7 @@ func main() {
 		command := string(line)
 		handleError(e)
 		lowerCommand := ""
-		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") {
+		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") || strings.HasPrefix(command, "gettable") {
 			stringsPart := strings.Split(command, "(")
 			lowerCommand = strings.ToLower(stringsPart[0])
 		} else {
@@ -87,6 +87,32 @@ func main() {
 			e := c.CallDecode("Nodes", "", &results)
 			handleError(e)
 			fmt.Printf("%v\n", results)
+		} else if lowerCommand == "gettable" {
+			_, data := parseGetTableCommand(command)
+			tableName := data.Key
+			ownerName := ActiveUser + "|" + data.Owner
+			// if ownerName == "" {
+			// 	ownerName = ActiveUser
+			// } else {
+			// 	ownerName
+			// }
+
+			//fmt.Println(tableName)
+
+			msg := MqMsg{Key: tableName, Value: ownerName}
+			results := []Table{}
+			e := c.CallDecode("GetTable", msg, &results)
+			if e != nil {
+				fmt.Println("Unable to store message: " + e.Error())
+			}
+
+			handleError(e)
+			tableContent := fmt.Sprintf("Key\t\t|Value\t\t|Owner\n")
+			for i := range results {
+				tableContent = tableContent + fmt.Sprintf("%s\t\t|%s\t\t|%s\n", strings.Split(results[i].Key, "|")[2], results[i].Value, results[i].Owner)
+			}
+			fmt.Println(tableContent)
+			//fmt.Printf("%v\n", results)
 		} else if lowerCommand == "set" {
 			_, data := parseSetCommand(command)
 
@@ -279,6 +305,21 @@ func parseSetCommand(command string) (string, MqMsg) {
 
 	} else {
 		return "set", MqMsg{}
+	}
+}
+
+func parseGetTableCommand(command string) (string, MqMsg) {
+	match, _ := regexp.MatchString("gettable()", strings.ToLower(command))
+	if match == true {
+		splitSet := strings.Split(command, "gettable(")[1]
+		data := strings.TrimRight(splitSet, ")")
+
+		m := commandToObject(data)
+
+		return "gettable", m
+
+	} else {
+		return "gettable", MqMsg{}
 	}
 }
 
