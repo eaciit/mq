@@ -35,15 +35,24 @@
 
 [data-page=login] .section-login .form {
   position: absolute;
-  width: 400px;
+  width: 300px;
   height: 179px;
   left: 50%;
   top: 50%;
-  margin-left: -200px;
+  margin-left: -150px;
   margin-top: -90px; }
   [data-page=login] .section-login .form .nav-menu {
     text-align: center;
     margin-bottom: 15px; }
+[data-page=login] .section-login .loader {
+  height: 128px;
+  width: 128px;
+  margin: 0px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -64px;
+  margin-top: -64px; }
 
 body {
   font-size: 12px;
