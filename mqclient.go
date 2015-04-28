@@ -14,18 +14,43 @@ import (
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	var e error
 	c, e := NewMqClient("127.0.0.1:7890", time.Second*10)
 	handleError(e)
-	fmt.Println("Connected to RPC Server")
+	fmt.Println("Connecting to RPC Server")
+	isLoggedIn := c.ClientInfo.IsLoggedIn
+
+	r := bufio.NewReader(os.Stdin)
+	for !isLoggedIn {
+		fmt.Print("UserName: ")
+		getUserName, _, _ := r.ReadLine()
+		UserName := string(getUserName)
+		fmt.Print("Password: ")
+		getPassword, _, _ := r.ReadLine()
+		Password := string(getPassword)
+		msg := MqMsg{Key: UserName, Value: Password}
+
+		Role := ""
+		i, e := c.CallToLogin(msg)
+		handleError(e)
+		if i.Value.(string) != "0" {
+			isLoggedIn = true
+			Role = i.Value.(string)
+		}
+
+		if isLoggedIn {
+			scrMsg := "Login Succesfull, your role is: " + Role
+			fmt.Println(scrMsg)
+		} else {
+			fmt.Println("Login Failed!")
+		}
+	}
 
 	msg := MqMsg{Key: "INFO", Value: "New Client Connected"}
 	c.CallToLog("SetLog", msg)
 
-	r := bufio.NewReader(os.Stdin)
-
 	status := ""
+
 	for status != "exit" {
 		fmt.Print("> ")
 		//fmt.Scanln(&command)
@@ -84,8 +109,9 @@ func main() {
 			//--- this to handle set command
 			commandParts := strings.Split(command, " ")
 			userName := commandParts[1]
-			password := strings.Join(commandParts[2:], " ")
-			msg := MqMsg{Key: userName, Value: password}
+			role := commandParts[2]
+			password := strings.Join(commandParts[3:], " ")
+			msg := MqMsg{Key: userName + "|" + role, Value: password}
 			_, e := c.Call("AddUser", msg)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
@@ -129,6 +155,7 @@ func main() {
 			fmt.Println(errorMsg)
 		}
 	}
+
 }
 
 func handleError(e error) {
