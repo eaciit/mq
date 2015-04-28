@@ -1,0 +1,58 @@
+{{define "console"}}
+{{template "head"}}
+<!-- include res/page-console -->
+<script src="/res/main/page-console.js"></script>
+
+<div class="col-md-12" data-page="console">
+	<div class="col-md-12 section section-console">
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<i class="fa fa-terminal"></i> Console
+			</div>
+			<div class="panel-body">
+				<div class="row nav-button no-margin">
+					<div class="inline">
+						<div class="btn btn-group btn-set-get">
+							<button class="btn btn-sm btn-success btn-set">
+								<span class="fa fa-arrow-down"></span> Set
+							</button>
+							<button class="btn btn-sm btn-success btn-get">
+								<span class="fa fa-arrow-up"></span> Get
+							</button>
+						</div>
+					</div>
+					<div class="inline">
+						<div class="input-group input-sm input-group-key">
+							<div class="input-group-addon input-sm">Key</div>
+							<input type="text" class="form-control input-sm input-key" placeholder="Type key here ..." />
+						</div>
+					</div>
+					<div class="inline inline-set">
+						<div class="input-group input-sm input-group-value">
+							<div class="input-group-addon input-sm">Value</div>
+							<input type="text" class="form-control input-sm input-value" placeholder="Type value here ..." />
+						</div>
+					</div>
+					<div class="inline">
+						<div class="btn btn-group padding-left">
+							<button class="btn btn-sm btn-primary btn-run">
+								<span class="fa fa-check"></span> Run
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="row no-margin content">
+					content here
+				</div>
+
+				<div class="loader">
+					<img src="/res/images/loader.gif" />
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+</div>
+{{end}}

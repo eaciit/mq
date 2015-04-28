@@ -59,6 +59,22 @@
     margin-left: -64px;
     margin-top: -64px; }
 
+[data-page=console] .section-console .nav-button {
+  border-bottom: 1px solid #ececec;
+  padding-bottom: 15px; }
+  [data-page=console] .section-console .nav-button .inline {
+    float: left; }
+    [data-page=console] .section-console .nav-button .inline .btn-group {
+      padding: 0px; }
+    [data-page=console] .section-console .nav-button .inline .input-group {
+      padding: 0px;
+      padding-top: 1px;
+      padding-left: 10px; }
+      [data-page=console] .section-console .nav-button .inline .input-group.input-group-key, [data-page=console] .section-console .nav-button .inline .input-group.input-group-value {
+        width: 200px; }
+    [data-page=console] .section-console .nav-button .inline .padding-left {
+      padding-left: 10px; }
+
 body {
   font-size: 12px;
   background-color: #ebeef0; }

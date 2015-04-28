@@ -64,6 +64,10 @@ func (m *MqMonitor) Start() {
 		handleUser(w, r, client, err)
 	})
 
+	http.HandleFunc("/console", func(w http.ResponseWriter, r *http.Request) {
+		handleConsole(w, r, client, err)
+	})
+
 	http.HandleFunc("/data/nodes", func(w http.ResponseWriter, r *http.Request) {
 		handleDataNodes(w, r, client, err)
 	})
@@ -163,6 +167,50 @@ func handleUser(w http.ResponseWriter, r *http.Request, client *MqClient, err er
 	}
 
 	executeTemplate(w, "user", nil)
+}
+
+func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+	if r.Method != "GET" {
+		w.Header().Set("Content-type", "application/json")
+		r.ParseForm()
+	}
+
+	if isServerAlive(w, r, client) == false {
+		return
+	}
+
+	if r.Method == "GET" {
+		// if clientInfo.IsLoggedIn {
+		// 	http.Redirect(w, r, "/", http.StatusFound)
+		// 	return
+		// }
+
+		executeTemplate(w, "console", nil)
+	} else if r.Method == "POST" {
+		// if clientInfo.IsLoggedIn {
+		// 	PrintJSON(w, false, "", "already logged in")
+		// 	return
+		// }
+
+		if success := rpcDo(w, client, func() error {
+			msg, err := client.Call("Get", MqMsg{
+				Key: r.FormValue("key"),
+			})
+
+			if err != nil {
+				return err
+			} else {
+				PrintJSON(w, true, msg.Value, "")
+			}
+
+			return err
+		}); !success {
+			return
+		}
+
+		PrintJSON(w, true, clientInfo, "")
+		return
+	}
 }
 
 func handleDataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
