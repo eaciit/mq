@@ -13,9 +13,9 @@ type MqClient struct {
 }
 
 type ClientInfo struct {
-	username   string
-	password   string
-	role       string
+	Username   string
+	Password   string
+	Role       string
 	IsLoggedIn bool
 	LastLogin  time.Time
 }
@@ -53,16 +53,17 @@ func (c *MqClient) CallToLogin(key MqMsg) (*MqMsg, error) {
 	if result.Value != "0" {
 		//login success
 		ci.IsLoggedIn = true
-		ci.username = key.Key
-		ci.password = key.Value.(string)
-		ci.role = result.Value.(string)
+		ci.Username = key.Key
+		ci.Password = key.Value.(string)
+		ci.Role = result.Value.(string)
 		ci.LastLogin = time.Now()
 	} else {
 		ci.IsLoggedIn = false
-		ci.username = ""
-		ci.password = ""
-		ci.role = ""
+		ci.Username = ""
+		ci.Password = ""
+		ci.Role = ""
 	}
+	result.Value = ci
 	c.ClientInfo = &ci
 	return &result, err
 }
