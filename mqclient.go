@@ -23,6 +23,7 @@ func main() {
 	isLoggedIn := c.ClientInfo.IsLoggedIn
 
 	r := bufio.NewReader(os.Stdin)
+	ActiveUser := ""
 	for !isLoggedIn {
 		fmt.Print("UserName: ")
 		getUserName, _, _ := r.ReadLine()
@@ -38,10 +39,12 @@ func main() {
 		if i.Value.(ClientInfo).IsLoggedIn {
 			isLoggedIn = true
 			Role = i.Value.(ClientInfo).Role
+			ActiveUser = i.Value.(ClientInfo).Username
 		}
 
 		if isLoggedIn {
-			scrMsg := "Login Succesfull, your role is: " + Role
+			scrMsg := fmt.Sprintf("Login Succesfull, your role is: %s with username: %s ", Role, ActiveUser)
+
 			fmt.Println(scrMsg)
 		} else {
 			fmt.Println("Login Failed!")
@@ -59,9 +62,16 @@ func main() {
 		line, _, _ := r.ReadLine()
 		command := string(line)
 		handleError(e)
-
-		stringsPart := strings.Split(command, "(")
-		lowerCommand := strings.ToLower(stringsPart[0])
+		lowerCommand := ""
+		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") {
+			fmt.Println("setget")
+			stringsPart := strings.Split(command, "(")
+			lowerCommand = strings.ToLower(stringsPart[0])
+		} else {
+			fmt.Println("others")
+			stringsPart := strings.Split(command, " ")
+			lowerCommand = strings.ToLower(stringsPart[0])
+		}
 
 		if lowerCommand == "exit" {
 			status = "exit"
