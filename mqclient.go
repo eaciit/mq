@@ -63,7 +63,7 @@ func main() {
 		command := string(line)
 		handleError(e)
 		lowerCommand := ""
-		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") || strings.HasPrefix(command, "gettable") {
+		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") || strings.HasPrefix(command, "inc") || strings.HasPrefix(command, "gettable") {
 			stringsPart := strings.Split(command, "(")
 			lowerCommand = strings.ToLower(stringsPart[0])
 		} else {
@@ -115,7 +115,7 @@ func main() {
 			//fmt.Printf("%v\n", results)
 		} else if lowerCommand == "set" {
 			_, data := parseSetCommand(command)
-
+			//owner := c.ClientInfo.Username
 			keygenerate := data.BuildKey(data.Owner, data.Table, data.Key)
 			value := data.Value
 			if data.Value == nil {
@@ -127,9 +127,31 @@ func main() {
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			}
+
+		} else if lowerCommand == "inc" {
+			Orikey, incVal := parseIncCommand(command)
+			//owner := c.ClientInfo.Username
+			m := MqMsg{}
+			keygenerate := m.BuildKey("public", "", Orikey)
+			//keygenerate := m.BuildKey(owner, "", Orikey)
+			msg, e := c.Call("Get", keygenerate)
+			if e != nil {
+				fmt.Println("No Data with Key : " + keygenerate)
+			} else {
+				val, _ := strconv.Atoi(incVal)
+				valstr := msg.Value.(string)
+				newval, _ := strconv.Atoi(valstr)
+				xxx := newval + val
+				_, e := c.CallInc("Inc", strconv.Itoa(xxx), keygenerate)
+				if e != nil {
+					fmt.Println("Unable to Increase value, message: " + e.Error())
+				}
+
+				//fmt.Printf("Value: %v \n", msg.Value)
+			}
+
 		} else if lowerCommand == "get" {
 			//--- this to handle get command
-
 			_, data := parseGetCommand(command)
 			keyx := strings.Split(data, ",")[0]
 			anotherkeys := strings.Split(data, ",")[1:]
@@ -308,6 +330,17 @@ func parseSetCommand(command string) (string, MqMsg) {
 	}
 }
 
+func parseIncCommand(command string) (string, string) {
+	match, _ := regexp.MatchString("inc()", command)
+	if match == true {
+		splitSet := strings.Split(command, "inc(")[1]
+		data := strings.TrimRight(splitSet, ")")
+		return strings.Split(data, ",")[0], strings.Split(data, ",")[1]
+
+	} else {
+		return "", ""
+	}
+}
 func parseGetTableCommand(command string) (string, MqMsg) {
 	match, _ := regexp.MatchString("gettable()", strings.ToLower(command))
 	if match == true {

@@ -46,6 +46,16 @@ func (c *MqClient) Call(op string, key interface{}) (*MqMsg, error) {
 	return &result, err
 }
 
+func (c *MqClient) CallInc(op string, data string, key string) (*MqMsg, error) {
+	result := MqMsg{} //
+	k := map[string]interface{}{
+		"data": data,
+		"key":  key,
+	}
+	err := c.connection.Call("MqRPC.Inc", k, &result)
+	return &result, err
+}
+
 func (c *MqClient) CallToLogin(key MqMsg) (*MqMsg, error) {
 	result := MqMsg{}
 	ci := ClientInfo{}
