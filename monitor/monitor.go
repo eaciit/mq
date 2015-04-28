@@ -49,27 +49,31 @@ func (m *MqMonitor) Start() {
 	http.Handle("/res/", http.StripPrefix("/res", http.FileServer(http.Dir(GetView(BaseView+"assets")))))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		ExecuteTemplate(w, "index", nil)
-	})
-
-	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-		ExecuteTemplate(w, "user", nil)
+		handleIndex(w, r, client, err)
 	})
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		login(w, r, client, err)
+		handleLogin(w, r, client, err)
+	})
+
+	http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		handleLogout(w, r, client, err)
+	})
+
+	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		handleUser(w, r, client, err)
 	})
 
 	http.HandleFunc("/data/nodes", func(w http.ResponseWriter, r *http.Request) {
-		dataNodes(w, r, client, err)
+		handleDataNodes(w, r, client, err)
 	})
 
 	http.HandleFunc("/data/items", func(w http.ResponseWriter, r *http.Request) {
-		dataItems(w, r, client, err)
+		handleDataItems(w, r, client, err)
 	})
 
 	http.HandleFunc("/data/users", func(w http.ResponseWriter, r *http.Request) {
-		dataUsers(w, r, client, err)
+		handleDataUsers(w, r, client, err)
 	})
 
 	fmt.Printf("starting http at :%d, connecting to master %s\n", m.port, ConnectionServerHost)
@@ -81,40 +85,52 @@ func (m *MqMonitor) Start() {
 	})
 }
 
-func login(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
-	w.Header().Set("Content-type", "application/json")
-	r.ParseForm()
+func handleIndex(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+	if !clientInfo.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	executeTemplate(w, "index", nil)
+}
+
+func handleLogin(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+	if r.Method != "GET" {
+		w.Header().Set("Content-type", "application/json")
+		r.ParseForm()
+	}
 
 	if isServerAlive(w, r, client) == false {
 		return
 	}
 
 	if r.Method == "GET" {
-		ExecuteTemplate(w, "user", nil)
+		if clientInfo.IsLoggedIn {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+
+		executeTemplate(w, "login", nil)
 	} else if r.Method == "POST" {
+		if clientInfo.IsLoggedIn {
+			PrintJSON(w, false, "", "already logged in")
+			return
+		}
+
 		if success := rpcDo(w, client, func() error {
-			err error
-			clientInfo, err := client.CallToLogin(MqMsg{
+			msg, err := client.CallToLogin(MqMsg{
 				Key:   r.FormValue("username"),
 				Value: r.FormValue("password"),
 			})
 
+			*clientInfo = msg.Value.(ClientInfo)
+
 			if err != nil {
-				clientInfo = ClientInfo{IsLoggedIn: false}
 				return err
 			}
 
-			if result.Value == "0" {
-				clientInfo = ClientInfo{IsLoggedIn: false}
+			if !clientInfo.IsLoggedIn {
 				return errors.New("Username/password is not match")
-			}
-
-			clientInfo = ClientInfo{
-				key.Key,
-				key.Value,
-				result.Value.(string),
-				true,
-				time.Now(),
 			}
 
 			return err
@@ -127,9 +143,36 @@ func login(w http.ResponseWriter, r *http.Request, client *MqClient, err error) 
 	}
 }
 
-func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+func handleLogout(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+	clientInfo = &ClientInfo{IsLoggedIn: false}
+
+	if r.Method == "GET" {
+		w.Header().Set("Content-type", "application/json")
+
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	PrintJSON(w, false, "", "you are not logged in. login first")
+}
+
+func handleUser(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+	if !clientInfo.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	executeTemplate(w, "user", nil)
+}
+
+func handleDataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
 	w.Header().Set("Content-type", "application/json")
 	r.ParseForm()
+
+	if !clientInfo.IsLoggedIn {
+		PrintJSON(w, false, "", "you are not logged in. login first")
+		return
+	}
 
 	if isServerAlive(w, r, client) == false {
 		return
@@ -229,9 +272,14 @@ func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 	PrintJSON(w, false, "", "Bad Request")
 }
 
-func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+func handleDataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
 	w.Header().Set("Content-type", "application/json")
 	r.ParseForm()
+
+	if !clientInfo.IsLoggedIn {
+		PrintJSON(w, false, "", "you are not logged in. login first")
+		return
+	}
 
 	if isServerAlive(w, r, client) == false {
 		return
@@ -289,9 +337,14 @@ func dataItems(w http.ResponseWriter, r *http.Request, client *MqClient, err err
 	PrintJSON(w, true, make([]interface{}, 0), "")
 }
 
-func dataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+func handleDataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
 	w.Header().Set("Content-type", "application/json")
 	r.ParseForm()
+
+	if !clientInfo.IsLoggedIn {
+		PrintJSON(w, false, "", "you are not logged in. login first")
+		return
+	}
 
 	if isServerAlive(w, r, client) == false {
 		return
@@ -399,7 +452,7 @@ func connect() (*MqClient, error) {
 	return NewMqClient(ConnectionServerHost, ConnectionTimout)
 }
 
-func ExecuteTemplate(w http.ResponseWriter, page string, data interface{}) {
+func executeTemplate(w http.ResponseWriter, page string, data interface{}) {
 	if DevelopmentMode {
 		Layout = GetTemplateView(BaseView + "views/*")
 	}

@@ -71,16 +71,10 @@ body {
       padding-left: 5px;
       color: #5F5F5F; }
     body .main .page-header .menu-nav {
-      margin-top: 5px; }
-      body .main .page-header .menu-nav button {
-        background-color: #f18044;
-        color: white; }
-        body .main .page-header .menu-nav button:hover {
-          background-color: #F07534; }
-        body .main .page-header .menu-nav button.active {
-          background-color: black;
-          opacity: 0.7;
-          pointer-events: none; }
+      margin-top: 12px;
+      margin-right: 20px; }
+      body .main .page-header .menu-nav a {
+        margin-left: 10px; }
   body .main .section .nav-search {
     padding: 0px 0px 15px; }
     body .main .section .nav-search .input-group {

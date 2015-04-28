@@ -8,8 +8,11 @@
 			// toastr init
 			toastr.options.closeButton = true
 			toastr.options.positionClass = 'toast-bottom-right';
+
+			if ($body.find('[data-page=login]').size() > 0)
+				$body.find('.menu-nav').remove()
 			
-			$body.find('.menu-nav .page-' + $body.find("[data-page]").attr("data-page")).addClass('active');
+			$body.find('.menu-nav .page-' + $body.find('[data-page]').attr('data-page')).addClass('active');
 		}
 
 		this.registerEventListener = function () {

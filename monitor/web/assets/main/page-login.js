@@ -28,10 +28,11 @@
 				.success(function (res) {
 					if (!res.success) {
 						toastr.error(res.message);
+						$sectionLogin.find('input[type=password]').val('');
 						return;
 					}
 
-					$sectionUser.find('.btn-search').trigger('click');
+					$sectionLogin.find('.btn-search').trigger('click');
 					toastr.success('login success');
 
 					setTimeout(function () {
