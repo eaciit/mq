@@ -64,11 +64,9 @@ func main() {
 		handleError(e)
 		lowerCommand := ""
 		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") {
-			fmt.Println("setget")
 			stringsPart := strings.Split(command, "(")
 			lowerCommand = strings.ToLower(stringsPart[0])
 		} else {
-			fmt.Println("others")
 			stringsPart := strings.Split(command, " ")
 			lowerCommand = strings.ToLower(stringsPart[0])
 		}
@@ -132,12 +130,36 @@ func main() {
 			//commandParts := strings.Split(keyx, " ")
 			//key := commandParts[1]
 
-			msg, e := c.Call("Get", keyx)
-			if e != nil {
-				fmt.Println("Unable to store message: " + e.Error())
-			} else {
-				fmt.Printf("Value: %v \n", msg.Value)
+			//fmt.Println("owner:", own)
+			//fmt.Println("table:", tbl)
+
+			if tbl != "" {
+				keyx = tbl + "|" + keyx
 			}
+			//fmt.Println("keyx:", keyx)
+
+			valPublic := ""
+			valOwner := ""
+
+			//if owner = "", looping 2x, first get as public, second get as specified user
+			if own == "" {
+				valPublic = getValue("public|"+keyx, c)
+				valOwner = getValue(ActiveUser+"|"+keyx, c)
+			} else {
+				valOwner = getValue(ActiveUser+"|"+keyx, c)
+			}
+
+			if valPublic != "" {
+				fmt.Println("Value (public): ", valPublic)
+			}
+			if valOwner != "" {
+				//fmt.Println("Value (owner:"+ActiveUser+"): ", valOwner)
+				fmt.Println("Value : ", valOwner)
+			}
+			if valPublic == "" && valOwner == "" {
+				fmt.Println("Unable to store message: Data doesn't exist")
+			}
+
 		} else if lowerCommand == "getlog" {
 			commandParts := strings.Split(command, " ")
 			key := commandParts[1]
@@ -269,5 +291,17 @@ func parseGetCommand(command string) (string, string) {
 
 	} else {
 		return "get", ""
+	}
+}
+
+func getValue(key string, c *MqClient) string {
+	//fmt.Println("key:", key)
+	msg, e := c.Call("Get", key)
+	if e != nil {
+		//fmt.Println("Unable to store message: " + e.Error())
+		return ""
+	} else {
+		return msg.Value.(string)
+		//fmt.Printf("Value: %v \n", msg.Value)
 	}
 }
