@@ -150,7 +150,7 @@ func main() {
 			}
 
 			if valPublic != "" {
-				fmt.Println("Value (public): ", valPublic)
+				fmt.Println("Value (public) : ", valPublic)
 			}
 			if valOwner != "" {
 				//fmt.Println("Value (owner:"+ActiveUser+"): ", valOwner)
