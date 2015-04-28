@@ -606,6 +606,18 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 	return nil
 }
 
+func (r *MqRPC) Inc(key map[string]interface{}, result *MqMsg) error {
+	k := key["key"]
+	data := key["data"]
+	v, e := r.items[k.(string)]
+	if e == false {
+		return errors.New("Data for key  is not exist")
+	} else {
+		v.Value = data
+		r.items[k.(string)] = v
+	}
+	return nil
+}
 func (r *MqRPC) Get(key string, result *MqMsg) error {
 	v, e := r.items[key]
 	if e == false {
