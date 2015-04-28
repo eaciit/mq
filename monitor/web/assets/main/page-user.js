@@ -147,9 +147,15 @@
 
 			$sectionInsert.find('.btn-reset').on('click', function () {
 				$(this).closest('.nav-menu').next().find('input').each(function (i, e) {
+					if (userEdit !== false)
+						if ($(e).attr('type') !== 'password')
+							return;
+
 					$(e).val('');
 				});
-				$sectionInsert.find('[name=role]').data('kendoDropDownList').value('');
+
+				if (userEdit === false)
+					$sectionInsert.find('[name=role]').data('kendoDropDownList').value('');
 			});
 
 			$sectionInsert.find('.btn-save').on('click', function () {

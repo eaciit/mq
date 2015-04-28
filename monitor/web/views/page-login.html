@@ -1,0 +1,45 @@
+{{define "login"}}
+{{template "head"}}
+<!-- include res/page-login -->
+<script src="/res/main/page-login.js"></script>
+
+<div class="col-md-12" data-page="login">
+	<div class="col-md-12 section section-login">
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<i class="fa fa-user"></i> Login
+			</div>
+			<div class="panel-body">
+				<div class="row no-padding no-margin">
+					<div class="form">
+						<form>
+							<div class="form-group">
+								<label>User Name</label>
+								<input type="text" class="form-control input-sm" name="username" placeholder="Enter User Name">
+							</div>
+							<div class="form-group">
+								<label>Password</label>
+								<input type="password" class="form-control input-sm" name="password" placeholder="Enter Password">
+							</div>
+						</form>
+						<div class="nav-menu">
+							<button class="btn btn-sm btn-warning btn-reset">
+								<span class="glyphicon glyphicon-remove"></span> Reset
+							</button>
+							<button class="btn btn-sm btn-primary btn-login">
+								<span class="glyphicon glyphicon-ok"></span> Login
+							</button>
+						</div>
+					</div>
+
+					<div class="loader">
+						<img src="/res/images/loader.gif" />
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+</div>
+{{end}}

@@ -6,6 +6,7 @@ import (
 	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
 	. "github.com/eaciit/mq/server"
+	"github.com/gorilla/sessions"
 	"html/template"
 	"net/http"
 	"os"
@@ -48,8 +49,12 @@ func (m *MqMonitor) Start() {
 		ExecuteTemplate(w, "index", nil)
 	})
 
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		ExecuteTemplate(w, "login", nil)
+	})
+
 	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-		ExecuteTemplate(w, "user", nil)
+		user(w, r, client, err)
 	})
 
 	http.HandleFunc("/data/nodes", func(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +76,21 @@ func (m *MqMonitor) Start() {
 			os.Exit(0)
 		}
 	})
+}
+
+func login(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
+	w.Header().Set("Content-type", "application/json")
+	r.ParseForm()
+
+	if isServerAlive(w, r, client) == false {
+		return
+	}
+
+	if r.Method == "GET" {
+		ExecuteTemplate(w, "user", nil)
+	} else if r.Method == "POST" {
+
+	}
 }
 
 func dataNodes(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {

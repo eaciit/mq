@@ -33,6 +33,18 @@
   [data-page=user] .section-insert .form .k-dropdown .k-dropdown-wrap {
     padding: 3px 0px 2px 6px; }
 
+[data-page=login] .section-login .form {
+  position: absolute;
+  width: 400px;
+  height: 179px;
+  left: 50%;
+  top: 50%;
+  margin-left: -200px;
+  margin-top: -90px; }
+  [data-page=login] .section-login .form .nav-menu {
+    text-align: center;
+    margin-bottom: 15px; }
+
 body {
   font-size: 12px;
   background-color: #ebeef0; }
