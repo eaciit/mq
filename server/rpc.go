@@ -51,6 +51,12 @@ type MqRPC struct {
 	exit  bool
 }
 
+type Table struct {
+	Key   string
+	Value string
+	Owner string
+}
+
 type MqUser struct {
 	UserName    string
 	Password    string
@@ -612,6 +618,40 @@ func (r *MqRPC) Get(key string, result *MqMsg) error {
 		return errors.New("Data for key " + key + " is not exist")
 	}
 	*result = v
+	return nil
+}
+
+func (r *MqRPC) GetTable(key MqMsg, result *MqMsg) error {
+	table := key.Key
+	splitOwner := strings.Split(key.Value.(string), "|")
+	filterOwner := splitOwner[1]
+	ActiveUser := splitOwner[0]
+	//fmt.Println("Owner: ", owner)
+	//fmt.Println("Table: ", table)
+	var tableContent []Table
+	for k, v := range r.items {
+		splitKey := strings.Split(k, "|")
+		tableOwner := splitKey[0]
+		tableName := splitKey[1]
+		if tableName == table {
+			row := Table{}
+			row.Key = k
+			row.Value = v.Value.(string)
+			row.Owner = tableOwner
+			if filterOwner == "" {
+				if tableOwner == "public" || tableOwner == ActiveUser {
+					tableContent = append(tableContent, row)
+				}
+			} else {
+				if tableOwner == filterOwner {
+					tableContent = append(tableContent, row)
+				}
+			}
+		}
+	}
+	//table := Table{}
+	buf, _ := Encode(tableContent)
+	result.Value = buf.Bytes()
 	return nil
 }
 
