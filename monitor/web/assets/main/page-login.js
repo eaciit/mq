@@ -19,6 +19,12 @@
 			});
 
 			$sectionLogin.find('.btn-login').on('click', function () {
+				var $form = $sectionLogin.find('.form');
+				var $loader = $sectionLogin.find('.loader');
+
+				$form.hide();
+				$loader.show();
+
 				$.ajax({
 					url: '/login',
 					type: 'post',
@@ -26,20 +32,28 @@
 					dataType: 'json'
 				})
 				.success(function (res) {
-					if (!res.success) {
-						toastr.error(res.message);
-						$sectionLogin.find('input[type=password]').val('');
-						return;
-					}
-
-					$sectionLogin.find('.btn-search').trigger('click');
-					toastr.success('login success');
-
 					setTimeout(function () {
-						document.location.href = '/';
+						if (!res.success) {
+							$form.show();
+							$loader.hide();
+
+							toastr.error(res.message);
+							$sectionLogin.find('input[type=password]').val('');
+							return;
+						}
+
+						$sectionLogin.find('.btn-search').trigger('click');
+						toastr.success('login success');
+
+						setTimeout(function () {
+							document.location.href = '/';
+						}, 1 * 1000);
 					}, 1 * 1000);
 				})
 				.error(function (a, b, c) {
+					$form.show();
+					$loader.hide();
+
 					toastr.error('error when trying to login');
 				});
 			});

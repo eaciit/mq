@@ -395,7 +395,7 @@ func handleDataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, e
 		oldUsername := strings.ToLower(r.FormValue("oldusername"))
 		username := strings.ToLower(r.FormValue("username"))
 		password := strings.ToLower(r.FormValue("password"))
-		// role = strings.ToLower(r.FormValue("role")) // not yet implemented
+		role := strings.ToLower(r.FormValue("role"))
 		isEdit := strings.ToLower(r.FormValue("edit"))
 
 		if isEdit == "true" {
@@ -416,7 +416,7 @@ func handleDataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, e
 
 		if success := rpcDo(w, client, func() error {
 			_, e := client.Call("AddUser", MqMsg{
-				Key:   username,
+				Key:   fmt.Sprintf("%s|%s", username, role),
 				Value: password,
 			})
 
