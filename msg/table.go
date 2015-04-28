@@ -11,7 +11,7 @@ type MqTable struct {
 	LastAccess time.Time
 	Expiry     time.Duration
 	Items      map[string]interface{}
-	Indexes    map[string]string
+	Indexes    map[string]map[string][]string
 }
 
 func NewTable(tableid string, owner string) *MqTable {
@@ -20,17 +20,17 @@ func NewTable(tableid string, owner string) *MqTable {
 	ret.Owner = owner
 	ret.Created = time.Now()
 	ret.Items = make(map[string]interface{})
-	ret.Indexes = make(map[string][]string)
+	ret.Indexes = make(map[string]map[string][]string)
 	return ret
 }
 
-func (t *MqTable) RunIndex(indexname string, indexFunction func(d) string) error {
-	indexes := make(map[string]string)
+func (t *MqTable) RunIndex(indexname string, indexFunction func(interface{}) string) error {
+	indexes := make(map[string][]string)
 	for k, v := range t.Items {
 		indexKey := indexFunction(v)
 		_, e := indexes[k]
 		if !e {
-			indexes[indexKey] = make([]string, 0)
+			indexes[indexKey] = []string{}
 		}
 		indexes[indexKey] = append(indexes[indexKey], k)
 	}
@@ -39,5 +39,5 @@ func (t *MqTable) RunIndex(indexname string, indexFunction func(d) string) error
 }
 
 func (t *MqTable) DropIndex(indexname string) {
-	remove(t.Indexes[indexname])
+	delete(t.Indexes, indexname)
 }
