@@ -7,7 +7,9 @@ import (
 	. "github.com/eaciit/mq/msg"
 	. "github.com/eaciit/mq/server"
 	"os"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -57,8 +59,8 @@ func main() {
 		line, _, _ := r.ReadLine()
 		command := string(line)
 		handleError(e)
-		//fmt.Printf("Processing command: %v \n", command)
-		stringsPart := strings.Split(command, " ")
+
+		stringsPart := strings.Split(command, "(")
 		lowerCommand := strings.ToLower(stringsPart[0])
 
 		if lowerCommand == "exit" {
@@ -78,20 +80,49 @@ func main() {
 			handleError(e)
 			fmt.Printf("%v\n", results)
 		} else if lowerCommand == "set" {
-			//--- this to handle set command
-			commandParts := strings.Split(command, " ")
-			key := commandParts[1]
-			value := strings.Join(commandParts[2:], " ")
-			msg := MqMsg{Key: key, Value: value}
+			_, data := parseSetCommand(command)
+
+			keygenerate := data.BuildKey(data.Owner, data.Table, data.Key)
+			value := data.Value
+			if data.Value == nil {
+				value = " "
+			}
+
+			msg := MqMsg{Key: keygenerate, Value: value}
 			_, e := c.Call("Set", msg)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			}
 		} else if lowerCommand == "get" {
 			//--- this to handle get command
-			commandParts := strings.Split(command, " ")
-			key := commandParts[1]
-			msg, e := c.Call("Get", key)
+
+			_, data := parseGetCommand(command)
+			keyx := strings.Split(data, ",")[0]
+			anotherkeys := strings.Split(data, ",")[1:]
+
+			own := ""
+			tbl := ""
+			for i := 0; i < len(anotherkeys); i++ {
+				akey := strings.Split(anotherkeys[i], "=")[0]
+				bkey := strings.Split(anotherkeys[i], "=")[1]
+				if strings.TrimSpace(akey) == "owner" {
+					own = bkey
+				}
+				if strings.TrimSpace(akey) == "table" {
+					tbl = bkey
+				}
+			}
+
+			own = strings.Trim(own, "\"")
+			tbl = strings.Trim(tbl, "\"")
+
+			//m := MqMsg{}
+			//keys := m.BuildKey(own, tbl, keyx)
+
+			//commandParts := strings.Split(keyx, " ")
+			//key := commandParts[1]
+
+			msg, e := c.Call("Get", keyx)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			} else {
@@ -162,5 +193,71 @@ func handleError(e error) {
 	if e != nil {
 		fmt.Println(e.Error())
 		os.Exit(100)
+	}
+}
+
+func commandToObject(data string) MqMsg {
+	m := MqMsg{}
+
+	m.Key = strings.TrimSpace(strings.Split(data, ",")[0])
+	anotherkeys := strings.Split(data, ",")[1:]
+
+	for i := 0; i < len(anotherkeys); i++ {
+		obj := strings.ToLower(strings.TrimSpace(anotherkeys[i]))
+
+		if i == 0 && !strings.Contains(obj, "=") {
+			m.Value = anotherkeys[i]
+		}
+
+		if strings.Split(obj, "=")[0] == "table" {
+			m.Table = strings.Trim(strings.Split(obj, "=")[1], "\"")
+
+		}
+		if strings.Split(obj, "=")[0] == "owner" {
+			m.Owner = strings.Trim(strings.Split(obj, "=")[1], "\"")
+
+		}
+		if strings.Split(obj, "=")[0] == "duration" {
+			i64, _ := strconv.ParseInt(strings.Split(obj, "=")[1], 10, 0)
+			m.Duration = i64
+
+		}
+		if strings.Split(obj, "=")[0] == "permission" {
+			m.Permission = strings.Trim(strings.Split(obj, "=")[1], "\"")
+
+		}
+		if strings.Split(obj, "=")[0] == "value" {
+			m.Value = strings.Split(obj, "=")[1]
+
+		}
+
+	}
+	return m
+}
+
+func parseSetCommand(command string) (string, MqMsg) {
+	match, _ := regexp.MatchString("set()", command)
+	if match == true {
+		splitSet := strings.Split(command, "set(")[1]
+		data := strings.TrimRight(splitSet, ")")
+
+		m := commandToObject(data)
+
+		return "set", m
+
+	} else {
+		return "set", MqMsg{}
+	}
+}
+
+func parseGetCommand(command string) (string, string) {
+	match, _ := regexp.MatchString("get()", command)
+	if match == true {
+		splitSet := strings.Split(command, "get(")[1]
+		data := strings.TrimRight(splitSet, ")")
+		return "get", data
+
+	} else {
+		return "get", ""
 	}
 }

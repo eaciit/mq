@@ -481,17 +481,44 @@ func (r *MqRPC) GetLogData(value MqMsg, result *MqMsg) error {
 	return nil
 }
 
-func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
+func parseValue(value string, result *MqMsg) error {
 
-	// get value msg
+	valsplit := strings.Split(value, "|")
+	for i := 0; i <= len(valsplit); i++ {
+		if i == 0 {
+
+		} else {
+			if strings.Contains(strings.ToLower(valsplit[i]), "owner") {
+				result.Owner = strings.Split(valsplit[i], "=")[1]
+			}
+			if strings.Contains(strings.ToLower(valsplit[i]), "duration") {
+				//result.Duration = int64(strings.Split(valsplit[i], "=")[1])
+			}
+			if strings.Contains(strings.ToLower(valsplit[i]), "table") {
+				result.Table = strings.Split(valsplit[i], "=")[1]
+			}
+			if strings.Contains(strings.ToLower(valsplit[i]), "permission") {
+				result.Permission = strings.Split(valsplit[i], "=")[1]
+			}
+
+		}
+	}
+	fmt.Println("parseValue", result)
+	//result.
+	return nil
+}
+
+func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 	msg := MqMsg{}
 	_, e := r.items[value.Key]
 	if e == true {
 		msg = r.items[value.Key]
 	} else {
+		//msg.Key = value.Key
 		msg.Key = value.Key
 	}
 	msg.Value = value.Value
+
 	buf, _ := Encode(msg.Value)
 
 	// get nodes where ===> r.nodes[j].DataSize+int64(buf.Len()) < r.nodes[j].AllocatedSize
@@ -538,14 +565,36 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
 			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len())) / 1024 / 1024)
 
-			//fmt.Println("Current node Data Size : ", r.nodes[idx].DataSize)
-			//fmt.Println("Incoming Data Size : ", int64(buf.Len()))
 			fmt.Println("Data have been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
 			msg.LastAccess = time.Now()
+			msg.SetDefaults(&msg)
+
+			valsplit := strings.Split(value.Value.(string), "|")
+			for i := 0; i < len(valsplit); i++ {
+				field := strings.ToLower(strings.Split(valsplit[i], "=")[0])
+				if strings.TrimSpace(field) == "owner" {
+					msg.Owner = strings.TrimSpace(strings.Split(valsplit[i], "=")[1])
+					msg.Owner = strings.Trim(msg.Owner, "\"")
+				}
+				if strings.TrimSpace(field) == "duration" {
+					x, _ := strconv.ParseInt(strings.Split(valsplit[i], "=")[1], 0, 64)
+					msg.Duration = x //strings.Split(valsplit[i], "=")[1].(int64))
+
+				}
+				if strings.TrimSpace(field) == "table" {
+					msg.Table = strings.TrimSpace(strings.Split(valsplit[i], "=")[1])
+					msg.Table = strings.Trim(msg.Table, "\"")
+
+				}
+				if strings.TrimSpace(field) == "permission" {
+					msg.Permission = strings.TrimSpace(strings.Split(valsplit[i], "=")[1])
+					msg.Permission = strings.Trim(msg.Permission, "\"")
+
+				}
+			}
+			msg.Key = value.Key //m.BuildKey(strings.Trim(msg.Owner, "\""), strings.Trim(msg.Table, "\""), strings.Trim(msg.Key, "\""))
 			r.items[value.Key] = msg
-
 			*result = msg
-
 			Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
 		} else {
 			Logging("New Key : '"+msg.Key+"' with value: '"+msg.Value.(string)+"', data cannot be transmit, because of memory Allocation all node reach max limit", "INFO")
@@ -558,6 +607,15 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 }
 
 func (r *MqRPC) Get(key string, result *MqMsg) error {
+	v, e := r.items[key]
+	if e == false {
+		return errors.New("Data for key " + key + " is not exist")
+	}
+	*result = v
+	return nil
+}
+
+func (r *MqRPC) GetWithBuildKey(key string, result *MqMsg) error {
 	v, e := r.items[key]
 	if e == false {
 		return errors.New("Data for key " + key + " is not exist")
