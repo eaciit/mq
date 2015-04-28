@@ -33,9 +33,9 @@ func main() {
 		Role := ""
 		i, e := c.CallToLogin(msg)
 		handleError(e)
-		if i.Value.(string) != "0" {
+		if i.Value.(ClientInfo).IsLoggedIn {
 			isLoggedIn = true
-			Role = i.Value.(string)
+			Role = i.Value.(ClientInfo).Role
 		}
 
 		if isLoggedIn {
