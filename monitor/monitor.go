@@ -1,12 +1,12 @@
 package monitor
 
 import (
+	"errors"
 	"fmt"
 	. "github.com/eaciit/mq/client"
 	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
 	. "github.com/eaciit/mq/server"
-	"github.com/gorilla/sessions"
 	"html/template"
 	"net/http"
 	"os"
@@ -26,6 +26,7 @@ const (
 var (
 	ConnectionServerHost string
 	Layout               *template.Template = GetTemplateView(BaseView + "views/*")
+	clientInfo           *ClientInfo
 )
 
 type (
@@ -40,6 +41,8 @@ func (m *MqMonitor) Start() {
 	var client *MqClient
 	var err error
 
+	clientInfo = &ClientInfo{IsLoggedIn: false}
+
 	client, err = connect()
 	Errorable(err)
 
@@ -49,12 +52,12 @@ func (m *MqMonitor) Start() {
 		ExecuteTemplate(w, "index", nil)
 	})
 
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		ExecuteTemplate(w, "login", nil)
+	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		ExecuteTemplate(w, "user", nil)
 	})
 
-	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-		user(w, r, client, err)
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		login(w, r, client, err)
 	})
 
 	http.HandleFunc("/data/nodes", func(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +92,38 @@ func login(w http.ResponseWriter, r *http.Request, client *MqClient, err error) 
 	if r.Method == "GET" {
 		ExecuteTemplate(w, "user", nil)
 	} else if r.Method == "POST" {
+		if success := rpcDo(w, client, func() error {
+			err error
+			clientInfo, err := client.CallToLogin(MqMsg{
+				Key:   r.FormValue("username"),
+				Value: r.FormValue("password"),
+			})
 
+			if err != nil {
+				clientInfo = ClientInfo{IsLoggedIn: false}
+				return err
+			}
+
+			if result.Value == "0" {
+				clientInfo = ClientInfo{IsLoggedIn: false}
+				return errors.New("Username/password is not match")
+			}
+
+			clientInfo = ClientInfo{
+				key.Key,
+				key.Value,
+				result.Value.(string),
+				true,
+				time.Now(),
+			}
+
+			return err
+		}); !success {
+			return
+		}
+
+		PrintJSON(w, true, clientInfo, "")
+		return
 	}
 }
 
