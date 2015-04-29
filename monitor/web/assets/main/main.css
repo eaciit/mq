@@ -22,6 +22,9 @@
 [data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=Created],
 [data-page=index] .section .k-grid thead.k-grid-header tr th[data-field=Expiry] {
   text-align: center; }
+@media screen and (max-width: 992px) {
+  [data-page=index] .section .panel-body {
+    min-height: inherit !important; } }
 
 [data-page=user] .section-user .k-grid thead.k-grid-header tr th:last-child {
   text-align: center; }
@@ -59,9 +62,10 @@
     margin-left: -64px;
     margin-top: -64px; }
 
+[data-page=console] .section-console.mode-get .nav-button .inline-set {
+  display: none; }
 [data-page=console] .section-console .nav-button {
-  border-bottom: 1px solid #ececec;
-  padding-bottom: 15px; }
+  padding-bottom: 10px; }
   [data-page=console] .section-console .nav-button .inline {
     float: left; }
     [data-page=console] .section-console .nav-button .inline .btn-group {
@@ -70,10 +74,13 @@
       padding: 0px;
       padding-top: 1px;
       padding-left: 10px; }
-      [data-page=console] .section-console .nav-button .inline .input-group.input-group-key, [data-page=console] .section-console .nav-button .inline .input-group.input-group-value {
-        width: 200px; }
     [data-page=console] .section-console .nav-button .inline .padding-left {
       padding-left: 10px; }
+[data-page=console] .section-console .bordered {
+  border-bottom: 1px solid #ececec;
+  padding-bottom: 15px; }
+[data-page=console] .section-console .content {
+  padding: 15px; }
 
 body {
   font-size: 12px;
@@ -127,8 +134,5 @@ body {
   body .main .section .panel-body {
     background-color: #fff;
     min-height: 430px; }
-    @media screen and (max-width: 992px) {
-      body .main .section .panel-body {
-        min-height: inherit !important; } }
 
 /*# sourceMappingURL=main.css.map */

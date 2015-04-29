@@ -10,8 +10,8 @@
 				<i class="fa fa-terminal"></i> Console
 			</div>
 			<div class="panel-body">
-				<div class="row nav-button no-margin">
-					<div class="inline">
+				<div class="row nav-button no-margin bordered">
+					<div class="inline" style="width: 192px">
 						<div class="btn btn-group btn-set-get">
 							<button class="btn btn-sm btn-success btn-set">
 								<span class="fa fa-arrow-down"></span> Set
@@ -20,24 +20,57 @@
 								<span class="fa fa-arrow-up"></span> Get
 							</button>
 						</div>
+
+						<div class="btn btn-group" style="margin-left: 6px;">
+							<button class="btn btn-sm btn-warning btn-detail">
+								<span class="fa fa-list-alt"></span> Detail
+							</button>
+						</div>
 					</div>
-					<div class="inline">
-						<div class="input-group input-sm input-group-key">
+					<div class="inline" style="width: 200px;">
+						<div class="input-group input-sm">
 							<div class="input-group-addon input-sm">Key</div>
 							<input type="text" class="form-control input-sm input-key" placeholder="Type key here ..." />
 						</div>
 					</div>
-					<div class="inline inline-set">
-						<div class="input-group input-sm input-group-value">
+					<div class="inline inline-set" style="width: 200px;">
+						<div class="input-group input-sm">
 							<div class="input-group-addon input-sm">Value</div>
 							<input type="text" class="form-control input-sm input-value" placeholder="Type value here ..." />
 						</div>
 					</div>
-					<div class="inline">
+					<div class="inline" style="width: 71px;">
 						<div class="btn btn-group padding-left">
 							<button class="btn btn-sm btn-primary btn-run">
 								<span class="fa fa-check"></span> Run
 							</button>
+						</div>
+					</div>
+				</div>
+				<div class="row nav-button no-margin bordered" style="display: none;">
+					<div class="inline" style="width: 112px;">&nbsp;</div>
+					<div class="inline">
+						<div class="input-group input-sm">
+							<div class="input-group-addon input-sm">Owner</div>
+							<input type="text" class="form-control input-sm input-owner" placeholder="Type here ..." />
+						</div>
+					</div>
+					<div class="inline">
+						<div class="input-group input-sm">
+							<div class="input-group-addon input-sm">Table</div>
+							<input type="text" class="form-control input-sm input-table" placeholder="Type here ..." />
+						</div>
+					</div>
+					<div class="inline">
+						<div class="input-group input-sm">
+							<div class="input-group-addon input-sm">Duration</div>
+							<input type="text" class="form-control input-sm input-duration" placeholder="Type here ..." />
+						</div>
+					</div>
+					<div class="inline">
+						<div class="input-group input-sm">
+							<div class="input-group-addon input-sm">Permission</div>
+							<input type="text" class="form-control input-sm input-permission" placeholder="Type here ..." />
 						</div>
 					</div>
 				</div>

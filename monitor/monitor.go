@@ -180,28 +180,45 @@ func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err
 	}
 
 	if r.Method == "GET" {
-		if clientInfo.IsLoggedIn {
-			http.Redirect(w, r, "/", http.StatusFound)
+		if !clientInfo.IsLoggedIn {
+			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 
 		executeTemplate(w, "console", nil)
 	} else if r.Method == "POST" {
-		if clientInfo.IsLoggedIn {
-			PrintJSON(w, false, "", "already logged in")
+		if !clientInfo.IsLoggedIn {
+			PrintJSON(w, false, "", "you are not logged in. login first")
 			return
 		}
 
 		mode := strings.ToLower(r.FormValue("mode"))
-		owner := strings.ToLower(r.FormValue("owner"))
 		key := strings.ToLower(r.FormValue("key"))
 		value := strings.ToLower(r.FormValue("value"))
+		owner := strings.ToLower(r.FormValue("owner"))
+		table := strings.ToLower(r.FormValue("table"))
+		duration := strings.ToLower(r.FormValue("duration"))
+		permission := strings.ToLower(r.FormValue("permission"))
+		keyParsed := ""
+
+		_ = duration
+		_ = permission
 
 		if owner == "" {
 			owner = "public"
 		}
 
-		keyParsed := fmt.Sprintf("%s|%s", owner, key)
+		if owner != "" {
+			keyParsed = fmt.Sprintf("%s|%s", keyParsed, owner)
+		}
+
+		if table != "" {
+			keyParsed = fmt.Sprintf("%s|%s", keyParsed, table)
+		}
+
+		if key != "" {
+			keyParsed = fmt.Sprintf("%s|%s", keyParsed, key)
+		}
 
 		if mode == "get" {
 			rpcDo(w, client, func() error {
@@ -223,7 +240,7 @@ func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err
 				})
 
 				if err == nil {
-					PrintJSON(w, true, "", "")
+					PrintJSON(w, true, keyParsed, "")
 				}
 
 				return err

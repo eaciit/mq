@@ -65,6 +65,9 @@
 		login.init();
 		login.registerEventListener();
 
+		$('[name="username"]').val('root');
+		$('[name="password"]').val('Password.1');
+
 		setTimeout(function () {
 			toastr.info("Welcome to MQ Monitor.<br />Please login.");
 		}, 1000 * 1);

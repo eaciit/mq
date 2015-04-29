@@ -36,6 +36,9 @@
 					th[data-field=Created],
 					th[data-field=Expiry]
 						text-align: center
+		.panel-body
+			@media screen and (max-width: 992px)
+				min-height: inherit !important
 
 [data-page=user]
 	.section-user
@@ -89,9 +92,13 @@
 
 [data-page=console]
 	.section-console
+		&.mode-get
+			.nav-button
+				.inline-set
+					display: none
+
 		.nav-button
-			border-bottom: 1px solid rgb(236, 236, 236)
-			padding-bottom: 15px
+			padding-bottom: 10px
 
 			.inline
 				float: left
@@ -104,12 +111,15 @@
 					padding-top: 1px
 					padding-left: 10px
 
-					&.input-group-key,
-					&.input-group-value
-						width: 200px
-
 				.padding-left
 					padding-left: 10px
+
+		.bordered
+			border-bottom: 1px solid rgb(236, 236, 236)
+			padding-bottom: 15px
+
+		.content
+			padding: 15px
 
 // backbone
 
@@ -180,6 +190,3 @@ body
 			.panel-body
 				background-color: #fff
 				min-height: 430px
-
-				@media screen and (max-width: 992px)
-					min-height: inherit !important

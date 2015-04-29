@@ -13,19 +13,24 @@
 
 		this.registerEventListener = function () {
 			$sectionConsole.find('.btn-set-get .btn').on('click', function () {
+				if ($(this).hasClass('btn-set') && !$(this).hasClass('active')) {
+					$sectionConsole.find('.input-value').val('');
+				}
+
 				$(this).siblings().removeClass('active');
 				$(this).addClass('active');
 
 				if ($(this).hasClass('btn-set')) {
-					$sectionConsole.find('.inline-set').show();
+					$sectionConsole.removeClass('mode-get');
 				} else if ($(this).hasClass('btn-get')) {
-					$sectionConsole.find('.inline-set').hide();
+					$sectionConsole.addClass('mode-get');
 				}
 
 				$body.find('.input-key').focus();
+				$(window).trigger('resize');
 			});
 
-			$body.find('.input-key').on('keyup', function (e) {
+			$sectionConsole.find('.input-key').on('keyup', function (e) {
 				if (e.keyCode !== 13)
 					return;
 				
@@ -40,7 +45,7 @@
 				$sectionConsole.find('.btn-run').trigger('click');
 			});
 
-			$body.find('.input-value').on('keyup', function (e) {
+			$sectionConsole.find('.input-value').on('keyup', function (e) {
 				if (e.keyCode !== 13)
 					return;
 
@@ -53,14 +58,18 @@
 				var $btnActive = $sectionConsole.find('.btn-set-get .btn.active');
 				var isModeSet = $btnActive.hasClass('btn-set');
 				var param = {
-					key: $sectionConsole.find('.input-key').val(),
-					value: $sectionConsole.find('.input-value').val(),
+					mode: (isModeSet ? 'set' : 'get'),
+					key: $.trim($sectionConsole.find('.input-key').val()),
+					value: $.trim($sectionConsole.find('.input-value').val()),
+					owner: $.trim($sectionConsole.find('.input-owner').val()),
+					table: $.trim($sectionConsole.find('.input-table').val()),
+					duration: $.trim($sectionConsole.find('.input-duration').val()),
+					permission: $.trim($sectionConsole.find('.input-permission').val()),
 				};
 
-				if (isModeSet) {
-					param.mode = 'set';
-				} else {
-					param.mode = 'get';
+				if (param.key.length === 0) {
+					toastr.error('key cannot be empty');
+					return;
 				}
 
 				$content.html('');
@@ -97,6 +106,43 @@
 					toastr.error('error when trying to login');
 				});
 			});
+
+			$sectionConsole.find('.btn-detail').on('click', function () {
+				var isActive = $(this).hasClass('active');
+
+				if (isActive) {
+					$(this).removeClass('active');
+					$('.nav-button:eq(0)').addClass('bordered');
+					$('.nav-button:eq(1)').hide();
+				} else {
+					$(this).addClass('active');
+					$('.nav-button:eq(0)').removeClass('bordered');
+					$('.nav-button:eq(1)').show();
+				}
+			});
+
+			$window.on('resize', function () {
+				var widthOfNav = $('.nav-button:eq(0)').width();
+				var widthOfSetGet = $('.nav-button:eq(0) .inline:eq(0)').width();
+				var widthOfInputKey = 200;
+				var widthOfInputValue = $('.nav-button:eq(0) .inline:eq(2)').width();
+				var widthOfButtonRun = $('.nav-button:eq(0) .inline:eq(3)').width();
+				var widthWithoutSetGetRun = (widthOfNav - widthOfSetGet - widthOfButtonRun);
+				var widthDetailEach = widthWithoutSetGetRun / 4;
+
+				if ($sectionConsole.hasClass('mode-get')) {
+					$('.nav-button:eq(0) .inline:eq(1)').width(widthWithoutSetGetRun);
+				} else {
+					$('.nav-button:eq(0) .inline:eq(1)').width(widthOfInputKey);
+					$('.nav-button:eq(0) .inline:eq(2)').width(widthWithoutSetGetRun - widthOfInputKey);
+				}
+
+				$('.nav-button:eq(1) .inline:eq(0)').width($('.nav-button:eq(0) .inline:eq(0)').width());
+				$('.nav-button:eq(1) .inline:eq(1)').width(widthDetailEach);
+				$('.nav-button:eq(1) .inline:eq(2)').width(widthDetailEach);
+				$('.nav-button:eq(1) .inline:eq(3)').width(widthDetailEach);
+				$('.nav-button:eq(1) .inline:eq(4)').width(widthDetailEach);
+			});
 		};
 	};
 
@@ -106,5 +152,6 @@
 		console.registerEventListener();
 
 		$('.btn-set-get .btn-get').trigger('click');
+		$(window).trigger('resize');
 	});
 }());
