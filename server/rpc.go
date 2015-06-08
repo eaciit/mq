@@ -10,7 +10,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -584,40 +583,32 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 
 	buf, _ := Encode(msg.Value)
 
-	// get nodes where ===> r.nodes[j].DataSize+int64(buf.Len()) < r.nodes[j].AllocatedSize
+	// Search for available node
 	idxmasuk := make(map[int]int)
 	counteridx := 1
 	for j := 0; j < len(r.nodes); j++ {
 		if r.nodes[j].DataSize+int64(buf.Len()) < r.nodes[j].AllocatedSize {
-			// masuk kriteria
 			idxmasuk[j] = j
 			counteridx++
 		}
 	}
 
-	// ada node yang available
 	if len(idxmasuk) > 0 {
-		// get min node berdasarkan idxmasuk (contains)
 		var countNd int64
 		var idx int
 
-		// pick min Node
+		// Pick min node
 		for i := 0; i < len(r.nodes); i++ {
-			if _, ok := idxmasuk[i]; ok { // node ada di list map
+			if _, ok := idxmasuk[i]; ok {
 				if i == 0 {
-					//nd = r.nodes[0]
 					countNd = r.nodes[0].DataCount
 					idx = 0
 				} else {
 					if countNd > r.nodes[i].DataCount {
-						//nd = r.nodes[i]
 						countNd = r.nodes[i].DataCount
 						idx = i
 					}
 				}
-
-			} else {
-				// all nodes tidak dapat di isikan data, karena maxsize
 			}
 		}
 
@@ -629,17 +620,15 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 			fmt.Printf("Data has been mirrored to Address: %s:%d, Size: %d DataCount: %d\n", mirror.Config.Name, mirror.Config.Port, mirror.DataSize, mirror.DataCount)
 		}
 
-		g := r.nodes[idx].DataCount
-		maxallocate := r.nodes[idx].AllocatedSize
-
-		if maxallocate > (r.nodes[idx].DataSize + int64(buf.Len())) {
-			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
-			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len())) / 1024 / 1024)
+		if r.nodes[idx].AllocatedSize > (r.nodes[idx].DataSize + int64(buf.Len())) {
+			r.nodes[idx].DataCount += 1
+			r.nodes[idx].DataSize += int64(buf.Len()) / 1024 / 1024
 
 			fmt.Println("Data has been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
 			msg.LastAccess = time.Now()
 			msg.SetDefaults(&msg)
 
+			// Decode data
 			valsplit := strings.Split(value.Value.(string), "|")
 			for i := 0; i < len(valsplit); i++ {
 				field := strings.ToLower(strings.Split(valsplit[i], "=")[0])
@@ -661,8 +650,22 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 				}
 			}
 			msg.Key = value.Key
-			r.items[value.Key] = msg
 			*result = msg
+
+			// Set item to selected node
+			client, e := NewMqClient(fmt.Sprintf("%s:%d", r.nodes[idx].Config.Name, r.nodes[idx].Config.Port), 10*time.Second)
+			if e != nil {
+				errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", r.nodes[idx].Config.Name, r.nodes[idx].Config.Port)
+				Logging(errorMsg, "ERROR")
+				return errors.New(errorMsg)
+			}
+
+			client.Call("SetItem", msg)
+			if e != nil {
+				errorMsg := fmt.Sprintf("Unable to set data to node : %s", e.Error())
+				return errors.New(errorMsg)
+			}
+
 			Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
 		} else {
 			Logging("New Key : '"+msg.Key+"' with value: '"+msg.Value.(string)+"', data cannot be transmit, because of memory Allocation all node reach max limit", "INFO")
@@ -674,8 +677,10 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 	return nil
 }
 
-func (r *MqRPC) SendData(key MqMsg, result *MqMsg) {
-	client, e := NewMqClient(fmt.Sprintf("%s:%d", mirrorConfig.Name, mirrorConfig.Port), 10*time.Second)
+func (r *MqRPC) SetItem(data MqMsg, result *MqMsg) error {
+	r.items[data.Key] = data
+	*result = data
+	return nil
 }
 
 func (r *MqRPC) Inc(key map[string]interface{}, result *MqMsg) error {
