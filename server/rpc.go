@@ -613,11 +613,24 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 		}
 
 		// Store data to all existing mirror
-		for _, mirror := range r.mirrors {
-			mirror.DataCount += 1
-			mirror.DataSize += int64(buf.Len()) / 1024 / 1024
+		for key, mirror := range r.mirrors {
+			r.mirrors[key].DataCount += 1
+			r.mirrors[key].DataSize += int64(buf.Len()) / 1024 / 1024
 
-			fmt.Printf("Data has been mirrored to Address: %s:%d, Size: %d DataCount: %d\n", mirror.Config.Name, mirror.Config.Port, mirror.DataSize, mirror.DataCount)
+			client, e := NewMqClient(fmt.Sprintf("%s:%d", mirror.Config.Name, mirror.Config.Port), 10*time.Second)
+			if e != nil {
+				errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", r.nodes[idx].Config.Name, r.nodes[idx].Config.Port)
+				Logging(errorMsg, "ERROR")
+				return errors.New(errorMsg)
+			}
+
+			client.Call("SetItem", msg)
+			if e != nil {
+				errorMsg := fmt.Sprintf("Unable to set data to node : %s", e.Error())
+				return errors.New(errorMsg)
+			}
+
+			fmt.Printf("Data has been mirrored to Address: %s:%d, Size: %d DataCount: %d\n", mirror.Config.Name, mirror.Config.Port, r.mirrors[key].DataSize, r.mirrors[key].DataCount)
 		}
 
 		if r.nodes[idx].AllocatedSize > (r.nodes[idx].DataSize + int64(buf.Len())) {
