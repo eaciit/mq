@@ -1,10 +1,11 @@
 package client
 
 import (
-	. "github.com/eaciit/mq/helper"
-	. "github.com/eaciit/mq/msg"
 	"net/rpc"
 	"time"
+
+	. "github.com/eaciit/mq/helper"
+	. "github.com/eaciit/mq/msg"
 )
 
 type MqClient struct {
@@ -41,9 +42,14 @@ func (c *MqClient) Close() {
 }
 
 func (c *MqClient) Call(op string, key interface{}) (*MqMsg, error) {
-	result := MqMsg{}
+	var result MqMsg
 	err := c.connection.Call("MqRPC."+op, key, &result)
 	return &result, err
+}
+
+func (c *MqClient) CallDirect(op string, key interface{}, result *MqMsg) error {
+	err := c.connection.Call("MqRPC."+op, key, result)
+	return err
 }
 
 func (c *MqClient) CallInc(op string, data string, key string) (*MqMsg, error) {

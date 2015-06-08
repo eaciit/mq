@@ -72,6 +72,7 @@ func (n *Node) ActiveDuration() time.Duration {
 
 func NewRPC(cfg *ServerConfig) *MqRPC {
 	m := new(MqRPC)
+	m.dataMap = make(map[string]int)
 	m.Config = cfg
 	m.items = make(map[string]MqMsg)
 	m.tables = make(map[string]MqTable)
@@ -679,6 +680,8 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 				return errors.New(errorMsg)
 			}
 
+			r.dataMap[msg.Key] = idx
+
 			Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
 		} else {
 			Logging("New Key : '"+msg.Key+"' with value: '"+msg.Value.(string)+"', data cannot be transmit, because of memory Allocation all node reach max limit", "INFO")
@@ -708,12 +711,31 @@ func (r *MqRPC) Inc(key map[string]interface{}, result *MqMsg) error {
 	}
 	return nil
 }
-func (r *MqRPC) Get(key string, result *MqMsg) error {
+
+func (r *MqRPC) GetItem(key string, result *MqMsg) error {
 	v, e := r.items[key]
 	if e == false {
 		return errors.New("Data for key " + key + " is not exist")
 	}
 	*result = v
+	return nil
+}
+
+func (r *MqRPC) Get(key string, result *MqMsg) error {
+	node := r.nodes[r.dataMap[key]]
+	client, err := NewMqClient(fmt.Sprintf("%s:%d", node.Config.Name, node.Config.Port), 10*time.Second)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", node.Config.Name, node.Config.Port)
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	err = client.CallDirect("GetItem", key, result)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Unable to get data from node : %s", err.Error())
+		return errors.New(errorMsg)
+	}
+
 	return nil
 }
 
