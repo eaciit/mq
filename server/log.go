@@ -3,7 +3,6 @@ package server
 import (
 	"bufio"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -56,26 +55,26 @@ func LogInit(traceHandle io.Writer,
 
 func Logging(msg string, prefix string) {
 	//log record of everything
-
-	upperPrefix := strings.ToUpper(prefix)
-
-	LogInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr, upperPrefix)
-
-	if upperPrefix == "ERROR" {
-		LogError.Println(msg)
-	} else if upperPrefix == "INFO" {
-		LogInfo.Println(msg)
-	} else if upperPrefix == "WARNING" {
-		LogWarning.Println(msg)
-	} else {
-		LogTrace.Println(msg)
-	}
-	LogToFile.Println(msg)
+	// DISABLE LOGGING ENABLE LATER
+	// upperPrefix := strings.ToUpper(prefix)
+	//
+	// LogInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr, upperPrefix)
+	//
+	// if upperPrefix == "ERROR" {
+	// 	LogError.Println(msg)
+	// } else if upperPrefix == "INFO" {
+	// 	LogInfo.Println(msg)
+	// } else if upperPrefix == "WARNING" {
+	// 	LogWarning.Println(msg)
+	// } else {
+	// 	LogTrace.Println(msg)
+	// }
+	// LogToFile.Println(msg)
 }
 
 func GetLogFileData(dateStr string, timeStr string) (string, error) {
 	dateRep := strings.Replace(dateStr, "/", "", -1)
-	fileName := "log/log-" + dateRep + ".txt"
+	fileName := "log/Log-" + dateRep + ".txt"
 	//fileName := "log/Log-20150423.txt"
 	file, err := os.Open(fileName)
 
