@@ -448,7 +448,7 @@ func (r *MqRPC) GetLog(key time.Time, result *MqMsg) error {
 func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
 	// fmt.Println(len(r.items))
 	newNodes := []Node{}
-	for i, n := range r.nodes {
+	for _, n := range r.nodes {
 		//- check health of the slave
 		if strings.ToLower(n.Config.Role) == "slave" {
 			_, e := NewMqClient(fmt.Sprintf("%s:%d", n.Config.Name, n.Config.Port), 1*time.Second)
