@@ -448,7 +448,7 @@ func (r *MqRPC) GetLog(key time.Time, result *MqMsg) error {
 func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
 	// fmt.Println(len(r.items))
 	newNodes := []Node{}
-	for _, n := range r.nodes {
+	for i, n := range r.nodes {
 		//- check health of the slave
 		if strings.ToLower(n.Config.Role) == "slave" {
 			_, e := NewMqClient(fmt.Sprintf("%s:%d", n.Config.Name, n.Config.Port), 1*time.Second)
@@ -489,6 +489,18 @@ func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
 			}
 			if isActive {
 				newNodes = append(newNodes, n)
+
+				// Previous node is dead
+				if len(newNodes) == i {
+					// Updating data map
+					for index, item := range r.dataMap {
+						if item == i {
+							// Update index to Previous node because dead node already deleted
+							r.dataMap[index] = i - (i - len(newNodes)) - 1
+						}
+					}
+				}
+
 			}
 		} else {
 			//if master
