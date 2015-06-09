@@ -29,7 +29,7 @@ var (
 )
 
 type Pair struct {
-	first, second interface{}
+	First, Second interface{}
 }
 
 type Node struct {
@@ -45,11 +45,12 @@ type Node struct {
 }
 
 type MqRPC struct {
-	dataMap map[string]int
-	items   map[string]MqMsg
-	tables  map[string]MqTable
-	Config  *ServerConfig
-	Host    *ServerConfig
+	dataMap        map[string]int
+	items          map[string]MqMsg
+	tables         map[string]MqTable
+	Config         *ServerConfig
+	Host           *ServerConfig
+	deadNodesCount int
 
 	users   []MqUser
 	nodes   []Node
@@ -357,6 +358,29 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	newNode.isOffline = false
 	r.nodes = append(r.nodes, newNode)
 	Logging("New Node has been added successfully", "INFO")
+
+	if r.deadNodesCount > 0 {
+		// There is dead node in master metadata
+		// Get meta for dead node
+		lostMeta := []string{}
+		for index, item := range r.dataMap {
+			if item == -r.deadNodesCount {
+				lostMeta = append(lostMeta, index)
+			}
+		}
+
+		lastNodeIndex := len(r.nodes) - 1
+		err := r.copyDataFromMirrorToNode(lastNodeIndex, lostMeta)
+		if err == nil {
+			// Copying data succes, update the dataMap
+			for index, item := range r.dataMap {
+				if item == -r.deadNodesCount {
+					r.dataMap[index] = lastNodeIndex
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -470,6 +494,17 @@ func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
 				duration := time.Since(n.offlineStart)
 				kill := int(math.Floor(math.Mod(math.Mod(duration.Seconds(), 3600), 60)))
 				if kill >= secondsToKill {
+					// Kill node
+					// Updating dead nodes count
+					r.deadNodesCount += 1
+
+					// Update dataMap before killing node
+					for index, item := range r.dataMap {
+						if item == i {
+							r.dataMap[index] = -r.deadNodesCount
+						}
+					}
+
 					isActive = false
 					errorMsg := fmt.Sprintf("SHUTTING DOWN SLAVE %s:%d, after idle more than %d second(s)", n.Config.Name, n.Config.Port, secondsToKill)
 					Logging(errorMsg, "INFO")
@@ -479,6 +514,7 @@ func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
 
 			} else {
 				if n.isOffline {
+					r.checkReconnectedNode(i)
 					errorMsg := fmt.Sprintf("CHECK HEALTH OF %s:%d, Slave is Up Again!", n.Config.Name, n.Config.Port)
 					//fmt.Println(errorMsg)
 					Logging(errorMsg, "INFO")
@@ -586,8 +622,8 @@ func parseValue(value string, result *MqMsg) error {
 	return nil
 }
 
-func (r *MqRPC) checkReconnectedNode(i int) error {
-	n := r.nodes[i]
+func (r *MqRPC) checkReconnectedNode(nodeIndex int) error {
+	n := r.nodes[nodeIndex]
 	client, err := NewMqClient(fmt.Sprintf("%s:%d", n.Config.Name, n.Config.Port), 1*time.Second)
 	if err != nil {
 		errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", n.Config.Name, n.Config.Port)
@@ -597,7 +633,7 @@ func (r *MqRPC) checkReconnectedNode(i int) error {
 
 	args := []string{}
 	for key, value := range r.dataMap {
-		if value == i {
+		if value == nodeIndex {
 			args = append(args, key)
 		}
 	}
@@ -611,34 +647,41 @@ func (r *MqRPC) checkReconnectedNode(i int) error {
 	}
 
 	if len(lostMeta) > 0 {
-		Logging("Data lost, copying data from mirror", "INFO")
-		if len(r.mirrors) > 0 {
-
-			for _, mirror := range r.mirrors {
-				//Getting data from mirror
-				mirrorClient, err := NewMqClient(fmt.Sprintf("%s:%d", mirror.Config.Name, mirror.Config.Port), 1*time.Second)
-				if err != nil {
-					errorMsg := fmt.Sprintf("Unable connect to mirror %s:%d\n", mirror.Config.Name, mirror.Config.Port)
-					Logging(errorMsg, "ERROR")
-				}
-
-				result := false
-				args := Pair{r.nodes[i].Config, lostMeta}
-				err = mirrorClient.CallDirect("FindAndSendItems", args, result)
-				if err != nil {
-					errorMsg := fmt.Sprintf("Unable send data from mirror to slave %s:%d\n", mirror.Config.Name, mirror.Config.Port)
-					Logging(errorMsg, "ERROR")
-				}
-
-			}
-
-		} else {
-			errorMsg := "Cant copy data to new node, no existing mirror connected"
-			Logging(errorMsg, "ERROR")
-			return errors.New(errorMsg)
-		}
+		r.copyDataFromMirrorToNode(nodeIndex, lostMeta)
 	} else {
 		Logging("All data still exist", "INFO")
+	}
+
+	return nil
+}
+
+func (r *MqRPC) copyDataFromMirrorToNode(nodeIndex int, lostMeta []string) error {
+	Logging("Data lost, copying data from mirror", "INFO")
+	if len(r.mirrors) > 0 {
+
+		for _, mirror := range r.mirrors {
+			//Getting data from mirror
+			mirrorClient, err := NewMqClient(fmt.Sprintf("%s:%d", mirror.Config.Name, mirror.Config.Port), 1*time.Second)
+			if err != nil {
+				errorMsg := fmt.Sprintf("Unable connect to mirror %s:%d\n", mirror.Config.Name, mirror.Config.Port)
+				Logging(errorMsg, "ERROR")
+			}
+
+			result := false
+			args := Pair{r.nodes[nodeIndex].Config, lostMeta}
+			err = mirrorClient.CallDirect("FindAndSendItems", args, result)
+			if err != nil {
+				errorMsg := fmt.Sprintf("Unable send command to mirror %s:%d, Error: %s \n", mirror.Config.Name, mirror.Config.Port, err.Error())
+				Logging(errorMsg, "ERROR")
+			}
+
+			Logging("Data successfully retrivied by node from mirror", "INFO")
+		}
+
+	} else {
+		errorMsg := "Cant copy data to new node, no existing mirror connected"
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
 	}
 
 	return nil
@@ -656,9 +699,9 @@ func (r *MqRPC) CheckData(args []string, result *[]string) error {
 	return nil
 }
 
-func (r *MqRPC) FindAndSendItems(args Pair, result *bool) error {
-	nodeConfig := args.first.(*ServerConfig)
-	lostMeta := args.second.([]string)
+func (r *MqRPC) FindAndSendItems(args Pair, result *int) error {
+	nodeConfig := args.First.(ServerConfig)
+	lostMeta := args.Second.([]string)
 
 	selectedItem := make(map[string]MqMsg)
 	for _, key := range lostMeta {
@@ -682,12 +725,12 @@ func (r *MqRPC) FindAndSendItems(args Pair, result *bool) error {
 	return nil
 }
 
-func (r *MqRPC) RetrieveDatas(datas map[string]MqMsg, result *bool) error {
+func (r *MqRPC) RetrieveDatas(datas map[string]MqMsg, result *int) error {
 	for key, data := range datas {
 		r.items[key] = data
 	}
 
-	*result = true
+	*result = 1
 	return nil
 }
 
