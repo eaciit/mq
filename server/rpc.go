@@ -669,7 +669,7 @@ func (r *MqRPC) copyDataFromMirrorToNode(nodeIndex int, lostMeta []string) error
 
 			result := false
 			args := Pair{r.nodes[nodeIndex].Config, lostMeta}
-			err = mirrorClient.CallDirect("FindAndSendItems", args, result)
+			err = mirrorClient.CallDirect("FindAndSendItems", args, &result)
 			if err != nil {
 				errorMsg := fmt.Sprintf("Unable send command to mirror %s:%d, Error: %s \n", mirror.Config.Name, mirror.Config.Port, err.Error())
 				Logging(errorMsg, "ERROR")
@@ -699,7 +699,7 @@ func (r *MqRPC) CheckData(args []string, result *[]string) error {
 	return nil
 }
 
-func (r *MqRPC) FindAndSendItems(args Pair, result *int) error {
+func (r *MqRPC) FindAndSendItems(args Pair, result *bool) error {
 	nodeConfig := args.First.(ServerConfig)
 	lostMeta := args.Second.([]string)
 
@@ -725,12 +725,12 @@ func (r *MqRPC) FindAndSendItems(args Pair, result *int) error {
 	return nil
 }
 
-func (r *MqRPC) RetrieveDatas(datas map[string]MqMsg, result *int) error {
+func (r *MqRPC) RetrieveDatas(datas map[string]MqMsg, result *bool) error {
 	for key, data := range datas {
 		r.items[key] = data
 	}
 
-	*result = 1
+	*result = true
 	return nil
 }
 
