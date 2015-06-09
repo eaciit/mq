@@ -6,17 +6,17 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	. "github.com/eaciit/mq/client"
-	. "github.com/eaciit/mq/helper"
-	. "github.com/eaciit/mq/msg"
 	"io"
 	"log"
 	"math"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	. "github.com/eaciit/mq/client"
+	. "github.com/eaciit/mq/helper"
+	. "github.com/eaciit/mq/msg"
 )
 
 const (
@@ -47,9 +47,10 @@ type MqRPC struct {
 	Config  *ServerConfig
 	Host    *ServerConfig
 
-	users []MqUser
-	nodes []Node
-	exit  bool
+	users   []MqUser
+	nodes   []Node
+	mirrors []Node
+	exit    bool
 }
 
 type Table struct {
@@ -71,6 +72,7 @@ func (n *Node) ActiveDuration() time.Duration {
 
 func NewRPC(cfg *ServerConfig) *MqRPC {
 	m := new(MqRPC)
+	m.dataMap = make(map[string]int)
 	m.Config = cfg
 	m.items = make(map[string]MqMsg)
 	m.tables = make(map[string]MqTable)
@@ -80,7 +82,6 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 }
 
 func (r *MqRPC) Ping(key string, result *MqMsg) error {
-	//fmt.Println("Allocated memory", r.nodes[0].AllocatedSize)
 	pingInfo := fmt.Sprintf("Server is running on port %s\n", strconv.Itoa(r.Config.Port))
 	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize (MB) \t\t\t|  MaxMemorySize (MB)\t\t\t \n")
 	for i, n := range r.nodes {
@@ -117,6 +118,14 @@ func (r *MqRPC) findNode(serverName string, port int) (int, Node) {
 			return i, r.nodes[i]
 		}
 	}
+
+	// Adding searching for existing mirror
+	for i := 0; i < len(r.mirrors) && !found; i++ {
+		if r.mirrors[i].Config.Name == serverName && r.mirrors[i].Config.Port == port {
+			return i, r.mirrors[i]
+		}
+	}
+
 	return -1, Node{}
 }
 
@@ -299,7 +308,7 @@ func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	newUser.DateCreated = time.Now()
 	r.users = append(r.users, newUser)
 
-	//*result = newUser
+	// *result = newUser
 
 	//save user to file
 	UpdateUserFile(r)
@@ -313,12 +322,12 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	nodeIndex, _ := r.findNode(nodeConfig.Name, nodeConfig.Port)
 	nodeFound := nodeIndex >= 0
 	if nodeFound {
-		errorMsg := "Unable to add node. It is already exist"
+		errorMsg := fmt.Sprintf("Unable to add node %s:%s. It is already exist", nodeConfig.Name, nodeConfig.Port)
 		Logging(errorMsg, "ERROR")
 		return errors.New(errorMsg)
 	}
 
-	//- check the server
+	//- check the slave server
 	client, e := NewMqClient(fmt.Sprintf("%s:%d", nodeConfig.Name, nodeConfig.Port), 10*time.Second)
 	if e != nil {
 		errorMsg := fmt.Sprintf("Unable to add node. Could not connect to %s:%d\n", nodeConfig.Name, nodeConfig.Port)
@@ -346,12 +355,57 @@ func (r *MqRPC) AddNode(nodeConfig *ServerConfig, result *MqMsg) error {
 	return nil
 }
 
+// TODO: in AddMirror and AddNode there are some similar code, so merge them!
+func (r *MqRPC) AddMirror(mirrorConfig *ServerConfig, result *MqMsg) error {
+	nodeIndex, _ := r.findNode(mirrorConfig.Name, mirrorConfig.Port)
+	nodeFound := nodeIndex >= 0
+	if nodeFound {
+		errorMsg := fmt.Sprintf("Unable to add mirror %s:%s. It is already exist", mirrorConfig.Name, mirrorConfig.Port)
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	//- check the mirror server
+	client, e := NewMqClient(fmt.Sprintf("%s:%d", mirrorConfig.Name, mirrorConfig.Port), 10*time.Second)
+	if e != nil {
+		errorMsg := fmt.Sprintf("Unable to add mirror. Could not connect to %s:%d\n", mirrorConfig.Name, mirrorConfig.Port)
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+	_, e = client.Call("SetMirror", mirrorConfig)
+	if e != nil {
+		errorMsg := "Unable to add node. Could not set node as mirror - message: " + e.Error()
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	newNode := Node{}
+	mirrorConfig.Role = "Mirror"
+	newNode.Config = mirrorConfig
+	newNode.DataCount = 0
+	newNode.DataSize = 0
+	newNode.client = client
+	newNode.StartTime = time.Now()
+	newNode.AllocatedSize = mirrorConfig.Memory /// 1024 / 1024
+	newNode.isOffline = false
+	r.mirrors = append(r.mirrors, newNode)
+	Logging("New Node has been added successfully", "INFO")
+	return nil
+}
+
 func (r *MqRPC) GetConfig(key string, result *MqMsg) error {
 	result.Value = *r.Config
 	return nil
 }
 
 func (r *MqRPC) SetSlave(config *ServerConfig, result *MqMsg) error {
+	r.Config.Role = "Slave"
+	r.Host = config
+	r.nodes = []Node{}
+	return nil
+}
+
+func (r *MqRPC) SetMirror(config *ServerConfig, result *MqMsg) error {
 	r.Config.Role = "Slave"
 	r.Host = config
 	r.nodes = []Node{}
@@ -387,6 +441,7 @@ func (r *MqRPC) GetLog(key time.Time, result *MqMsg) error {
 }
 
 func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
+	// fmt.Println(len(r.items))
 	newNodes := []Node{}
 	for i, n := range r.nodes {
 		//- check health of the slave
@@ -445,7 +500,7 @@ func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
 
 func (r *MqRPC) CheckHealthMaster(key string, result *MqMsg) error {
 	callbackCmd := ""
-	//fmt.Println("cek master")
+	// fmt.Println(len(r.items))
 	_, e := NewMqClient(fmt.Sprintf(key), 1*time.Second)
 	if e != nil {
 		//fmt.Println(e)
@@ -518,65 +573,76 @@ func parseValue(value string, result *MqMsg) error {
 
 func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 	msg := MqMsg{}
-	_, e := r.items[value.Key]
-	if e == true {
+	// check if data already in items
+	_, exist := r.items[value.Key]
+	if exist {
 		msg = r.items[value.Key]
 	} else {
-		//msg.Key = value.Key
 		msg.Key = value.Key
 	}
 	msg.Value = value.Value
 
 	buf, _ := Encode(msg.Value)
 
-	// get nodes where ===> r.nodes[j].DataSize+int64(buf.Len()) < r.nodes[j].AllocatedSize
+	// Search for available node
 	idxmasuk := make(map[int]int)
 	counteridx := 1
 	for j := 0; j < len(r.nodes); j++ {
 		if r.nodes[j].DataSize+int64(buf.Len()) < r.nodes[j].AllocatedSize {
-			// masuk kriteria
 			idxmasuk[j] = j
 			counteridx++
 		}
 	}
 
-	// ada node yang available
 	if len(idxmasuk) > 0 {
-		// get min node berdasarkan idxmasuk (contains)
 		var countNd int64
 		var idx int
 
-		// pick min Node
+		// Pick min node
 		for i := 0; i < len(r.nodes); i++ {
-			if _, ok := idxmasuk[i]; ok { // node ada di list map
+			if _, ok := idxmasuk[i]; ok {
 				if i == 0 {
-					//nd = r.nodes[0]
 					countNd = r.nodes[0].DataCount
 					idx = 0
 				} else {
 					if countNd > r.nodes[i].DataCount {
-						//nd = r.nodes[i]
 						countNd = r.nodes[i].DataCount
 						idx = i
 					}
 				}
-
-			} else {
-				// all nodes tidak dapat di isikan data, karena maxsize
 			}
 		}
 
-		g := r.nodes[idx].DataCount
-		maxallocate := r.nodes[idx].AllocatedSize
+		// Store data to all existing mirror
+		for key, mirror := range r.mirrors {
+			r.mirrors[key].DataCount += 1
+			r.mirrors[key].DataSize += int64(buf.Len()) / 1024 / 1024
 
-		if maxallocate > (r.nodes[idx].DataSize + int64(buf.Len())) {
-			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataCount").SetInt(g + 1)
-			reflect.ValueOf(&r.nodes[idx]).Elem().FieldByName("DataSize").SetInt((r.nodes[idx].DataSize + int64(buf.Len())) / 1024 / 1024)
+			client, e := NewMqClient(fmt.Sprintf("%s:%d", mirror.Config.Name, mirror.Config.Port), 10*time.Second)
+			if e != nil {
+				errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", r.nodes[idx].Config.Name, r.nodes[idx].Config.Port)
+				Logging(errorMsg, "ERROR")
+				return errors.New(errorMsg)
+			}
 
-			fmt.Println("Data have been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
+			client.Call("SetItem", msg)
+			if e != nil {
+				errorMsg := fmt.Sprintf("Unable to set data to node : %s", e.Error())
+				return errors.New(errorMsg)
+			}
+
+			fmt.Printf("Data has been mirrored to Address: %s:%d, Size: %d DataCount: %d\n", mirror.Config.Name, mirror.Config.Port, r.mirrors[key].DataSize, r.mirrors[key].DataCount)
+		}
+
+		if r.nodes[idx].AllocatedSize > (r.nodes[idx].DataSize + int64(buf.Len())) {
+			r.nodes[idx].DataCount += 1
+			r.nodes[idx].DataSize += int64(buf.Len()) / 1024 / 1024
+
+			fmt.Println("Data has been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
 			msg.LastAccess = time.Now()
 			msg.SetDefaults(&msg)
 
+			// Decode data
 			valsplit := strings.Split(value.Value.(string), "|")
 			for i := 0; i < len(valsplit); i++ {
 				field := strings.ToLower(strings.Split(valsplit[i], "=")[0])
@@ -587,22 +653,35 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 				if strings.TrimSpace(field) == "duration" {
 					x, _ := strconv.ParseInt(strings.Split(valsplit[i], "=")[1], 0, 64)
 					msg.Duration = x //strings.Split(valsplit[i], "=")[1].(int64))
-
 				}
 				if strings.TrimSpace(field) == "table" {
 					msg.Table = strings.TrimSpace(strings.Split(valsplit[i], "=")[1])
 					msg.Table = strings.Trim(msg.Table, "\"")
-
 				}
 				if strings.TrimSpace(field) == "permission" {
 					msg.Permission = strings.TrimSpace(strings.Split(valsplit[i], "=")[1])
 					msg.Permission = strings.Trim(msg.Permission, "\"")
-
 				}
 			}
-			msg.Key = value.Key //m.BuildKey(strings.Trim(msg.Owner, "\""), strings.Trim(msg.Table, "\""), strings.Trim(msg.Key, "\""))
-			r.items[value.Key] = msg
+			msg.Key = value.Key
 			*result = msg
+
+			// Set item to selected node
+			client, e := NewMqClient(fmt.Sprintf("%s:%d", r.nodes[idx].Config.Name, r.nodes[idx].Config.Port), 10*time.Second)
+			if e != nil {
+				errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", r.nodes[idx].Config.Name, r.nodes[idx].Config.Port)
+				Logging(errorMsg, "ERROR")
+				return errors.New(errorMsg)
+			}
+
+			client.Call("SetItem", msg)
+			if e != nil {
+				errorMsg := fmt.Sprintf("Unable to set data to node : %s", e.Error())
+				return errors.New(errorMsg)
+			}
+
+			r.dataMap[msg.Key] = idx
+
 			Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
 		} else {
 			Logging("New Key : '"+msg.Key+"' with value: '"+msg.Value.(string)+"', data cannot be transmit, because of memory Allocation all node reach max limit", "INFO")
@@ -611,6 +690,12 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 		Logging("Data cannot be transmit, because of All node reach max limit", "INFO")
 	}
 
+	return nil
+}
+
+func (r *MqRPC) SetItem(data MqMsg, result *MqMsg) error {
+	r.items[data.Key] = data
+	*result = data
 	return nil
 }
 
@@ -626,12 +711,31 @@ func (r *MqRPC) Inc(key map[string]interface{}, result *MqMsg) error {
 	}
 	return nil
 }
-func (r *MqRPC) Get(key string, result *MqMsg) error {
+
+func (r *MqRPC) GetItem(key string, result *MqMsg) error {
 	v, e := r.items[key]
 	if e == false {
 		return errors.New("Data for key " + key + " is not exist")
 	}
 	*result = v
+	return nil
+}
+
+func (r *MqRPC) Get(key string, result *MqMsg) error {
+	node := r.nodes[r.dataMap[key]]
+	client, err := NewMqClient(fmt.Sprintf("%s:%d", node.Config.Name, node.Config.Port), 10*time.Second)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", node.Config.Name, node.Config.Port)
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	err = client.CallDirect("GetItem", key, result)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Unable to get data from node : %s", err.Error())
+		return errors.New(errorMsg)
+	}
+
 	return nil
 }
 

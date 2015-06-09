@@ -3,15 +3,16 @@ package main
 import (
 	"bufio"
 	"fmt"
-	. "github.com/eaciit/mq/client"
-	. "github.com/eaciit/mq/msg"
-	. "github.com/eaciit/mq/server"
 	"os"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	. "github.com/eaciit/mq/client"
+	. "github.com/eaciit/mq/msg"
+	. "github.com/eaciit/mq/server"
 )
 
 func main() {
