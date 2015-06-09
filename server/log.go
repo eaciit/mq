@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -70,6 +71,8 @@ func Logging(msg string, prefix string) {
 	// 	LogTrace.Println(msg)
 	// }
 	// LogToFile.Println(msg)
+
+	fmt.Println(msg)
 }
 
 func GetLogFileData(dateStr string, timeStr string) (string, error) {

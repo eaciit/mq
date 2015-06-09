@@ -28,6 +28,10 @@ var (
 	isServerIdle    bool = false
 )
 
+type Pair struct {
+	first, second interface{}
+}
+
 type Node struct {
 	Config    *ServerConfig
 	DataCount int64
@@ -77,6 +81,7 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 	m.items = make(map[string]MqMsg)
 	m.tables = make(map[string]MqTable)
 	m.nodes = []Node{Node{cfg, 0, 0, nil, time.Now(), time.Now(), false, int64(cfg.Memory)}}
+	m.mirrors = []Node{}
 	m.Host = cfg
 	return m
 }
@@ -468,7 +473,6 @@ func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
 					isActive = false
 					errorMsg := fmt.Sprintf("SHUTTING DOWN SLAVE %s:%d, after idle more than %d second(s)", n.Config.Name, n.Config.Port, secondsToKill)
 					Logging(errorMsg, "INFO")
-
 				}
 
 				//then remove from r.nodes
@@ -486,7 +490,6 @@ func (r *MqRPC) CheckHealthSlaves(key string, result *MqMsg) error {
 			if isActive {
 				newNodes = append(newNodes, n)
 			}
-			r.nodes[i] = n
 		} else {
 			//if master
 			newNodes = append(newNodes, n)
@@ -568,6 +571,111 @@ func parseValue(value string, result *MqMsg) error {
 	}
 	fmt.Println("parseValue", result)
 	//result.
+	return nil
+}
+
+func (r *MqRPC) checkReconnectedNode(i int) error {
+	n := r.nodes[i]
+	client, err := NewMqClient(fmt.Sprintf("%s:%d", n.Config.Name, n.Config.Port), 1*time.Second)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", n.Config.Name, n.Config.Port)
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	args := []string{}
+	for key, value := range r.dataMap {
+		if value == i {
+			args = append(args, key)
+		}
+	}
+
+	lostMeta := []string{}
+	err = client.CallDirect("CheckData", args, &lostMeta)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", n.Config.Name, n.Config.Port)
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	if len(lostMeta) > 0 {
+		Logging("Data lost, copying data from mirror", "INFO")
+		if len(r.mirrors) > 0 {
+
+			for _, mirror := range r.mirrors {
+				//Getting data from mirror
+				mirrorClient, err := NewMqClient(fmt.Sprintf("%s:%d", mirror.Config.Name, mirror.Config.Port), 1*time.Second)
+				if err != nil {
+					errorMsg := fmt.Sprintf("Unable connect to mirror %s:%d\n", mirror.Config.Name, mirror.Config.Port)
+					Logging(errorMsg, "ERROR")
+				}
+
+				result := false
+				args := Pair{r.nodes[i].Config, lostMeta}
+				err = mirrorClient.CallDirect("FindAndSendItems", args, result)
+				if err != nil {
+					errorMsg := fmt.Sprintf("Unable send data from mirror to slave %s:%d\n", mirror.Config.Name, mirror.Config.Port)
+					Logging(errorMsg, "ERROR")
+				}
+
+			}
+
+		} else {
+			errorMsg := "Cant copy data to new node, no existing mirror connected"
+			Logging(errorMsg, "ERROR")
+			return errors.New(errorMsg)
+		}
+	} else {
+		Logging("All data still exist", "INFO")
+	}
+
+	return nil
+}
+
+// Check existing data with master metadata
+func (r *MqRPC) CheckData(args []string, result *[]string) error {
+	for _, key := range args {
+		_, exist := r.items[key]
+		if !exist {
+			args = append(*result, key)
+		}
+	}
+
+	return nil
+}
+
+func (r *MqRPC) FindAndSendItems(args Pair, result *bool) error {
+	nodeConfig := args.first.(*ServerConfig)
+	lostMeta := args.second.([]string)
+
+	selectedItem := make(map[string]MqMsg)
+	for _, key := range lostMeta {
+		selectedItem[key] = r.items[key]
+	}
+
+	client, err := NewMqClient(fmt.Sprintf("%s:%d", nodeConfig.Name, nodeConfig.Port), 1*time.Second)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", nodeConfig.Name, nodeConfig.Port)
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	err = client.CallDirect("RetrieveDatas", selectedItem, result)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Unable send data to slaves from mirror %s:%d\n", nodeConfig.Name, nodeConfig.Port)
+		Logging(errorMsg, "ERROR")
+		return errors.New(errorMsg)
+	}
+
+	return nil
+}
+
+func (r *MqRPC) RetrieveDatas(datas map[string]MqMsg, result *bool) error {
+	for key, data := range datas {
+		r.items[key] = data
+	}
+
+	*result = true
 	return nil
 }
 
