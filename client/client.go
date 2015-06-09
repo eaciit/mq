@@ -47,7 +47,7 @@ func (c *MqClient) Call(op string, key interface{}) (*MqMsg, error) {
 	return &result, err
 }
 
-func (c *MqClient) CallDirect(op string, key interface{}, result *MqMsg) error {
+func (c *MqClient) CallDirect(op string, key interface{}, result interface{}) error {
 	err := c.connection.Call("MqRPC."+op, key, result)
 	return err
 }
