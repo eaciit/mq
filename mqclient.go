@@ -64,7 +64,7 @@ func main() {
 		command := string(line)
 		handleError(e)
 		lowerCommand := ""
-		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") || strings.HasPrefix(command, "inc") || strings.HasPrefix(command, "gettable") {
+		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") || strings.HasPrefix(command, "inc") || strings.HasPrefix(command, "gettable") || strings.HasPrefix(command, "keys") {
 			stringsPart := strings.Split(command, "(")
 			lowerCommand = strings.ToLower(stringsPart[0])
 		} else {
@@ -255,6 +255,11 @@ func main() {
 			s, e := c.CallString("GetListUsers", "")
 			handleError(e)
 			fmt.Printf(s)
+		} else if lowerCommand == "keys" {
+			arg := parseSingleValueCommand("keys", command)
+			s, e := c.CallString("Keys", arg)
+			handleError(e)
+			fmt.Println(s)
 		} else {
 			errorMsg := "Unable to find command " + command
 			//c.CallToLog(errorMsg,"ERROR")
@@ -273,7 +278,6 @@ func main() {
 func handleError(e error) {
 	if e != nil {
 		fmt.Println(e.Error())
-		os.Exit(100)
 	}
 }
 
@@ -314,6 +318,17 @@ func commandToObject(data string) MqMsg {
 
 	}
 	return m
+}
+
+func parseSingleValueCommand(prefix string, command string) string {
+	match, _ := regexp.MatchString(prefix+"()", command)
+	if match == true {
+		splitSet := strings.Split(command, prefix+"(")[1]
+		data := strings.TrimRight(splitSet, ")")
+		return data
+	} else {
+		return ""
+	}
 }
 
 func parseSetCommand(command string) (string, MqMsg) {

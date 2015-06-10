@@ -104,6 +104,27 @@ func (r *MqRPC) Ping(key string, result *MqMsg) error {
 	return nil
 }
 
+func (r *MqRPC) Keys(key string, result *MqMsg) error {
+	i, _ := strconv.Atoi(key)
+	if i >= 0 && i < len(r.nodes) {
+		node := r.nodes[i]
+		keysInfo := fmt.Sprintf("Node is running on port %d\nKeys available: ", node.Config.Port)
+
+		for index, item := range r.dataMap {
+			if item == i {
+				keysInfo += index + ", "
+			}
+		}
+
+		(*result).Value = keysInfo
+	} else {
+		errorMsg := fmt.Sprintf("Couldn't found node with number %s", key)
+		return errors.New(errorMsg)
+	}
+
+	return nil
+}
+
 func (r *MqRPC) Items(key string, result *MqMsg) error {
 	buf, e := Encode(r.items)
 	result.Value = buf.Bytes()
@@ -964,8 +985,7 @@ func (r *MqRPC) Delete(key string, result *MqMsg) error {
 	return nil
 }
 
-
-func GetTableByKey(key string) string{
+func GetTableByKey(key string) string {
 	tablePositionAtIndex := len(strings.Split(key, "|")) - 2
 	tableName := strings.Split(key, "|")[tablePositionAtIndex]
 	return tableName
@@ -973,32 +993,32 @@ func GetTableByKey(key string) string{
 
 func (r *MqRPC) setTableProperties(value MqMsg) {
 	tableName := GetTableByKey(value.Key)
-	table := NewTable(tableName,value.Owner)
+	table := NewTable(tableName, value.Owner)
 	isTableExist := false
-	for k,v := range r.tables{
-			if k == tableName{
-				*table = v
-				isTableExist = true
-				break
-			}
+	for k, v := range r.tables {
+		if k == tableName {
+			*table = v
+			isTableExist = true
+			break
+		}
 	}
 	item := make(map[string]interface{})
-	if !isTableExist{
+	if !isTableExist {
 		item[value.Key] = value.Value
 		table.Items = item
 		r.tables[tableName] = *table
-		message := fmt.Sprintf("Succesfull add new table %s and the properties ",tableName)
-		Logging (message, "INFO")
-	}else{
+		message := fmt.Sprintf("Succesfull add new table %s and the properties ", tableName)
+		Logging(message, "INFO")
+	} else {
 		table.Items[value.Key] = value.Value
-		message := fmt.Sprintf("Succesfull add item, key->%s, value->%s, in table %s",value.Key,value.Value,tableName)
-		Logging (message, "INFO")
+		message := fmt.Sprintf("Succesfull add item, key->%s, value->%s, in table %s", value.Key, value.Value, tableName)
+		Logging(message, "INFO")
 	}
 	setIndex(table)
 	// fmt.Println(r.tables)
 }
 
-func setIndex(t *MqTable){
-	getIndexByRole := func(value interface{}) string {return GetEmployeeRole(value)}
-	t.RunIndex("employeerole",getIndexByRole)
+func setIndex(t *MqTable) {
+	getIndexByRole := func(value interface{}) string { return GetEmployeeRole(value) }
+	t.RunIndex("employeerole", getIndexByRole)
 }
