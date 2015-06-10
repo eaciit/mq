@@ -28,10 +28,11 @@ func (t *MqTable) RunIndex(indexname string, indexFunction func(interface{}) str
 	indexes := make(map[string][]string)
 	for k, v := range t.Items {
 		indexKey := indexFunction(v)
-		_, e := indexes[k]
-		if !e {
-			indexes[indexKey] = []string{}
-		}
+		// check if indexes[key] exist
+		// _, e := indexes[k]
+		// if !e {
+		// 	indexes[indexKey] = []string{}
+		// }
 		indexes[indexKey] = append(indexes[indexKey], k)
 	}
 	t.Indexes[indexname] = indexes
