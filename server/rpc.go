@@ -108,7 +108,7 @@ func (r *MqRPC) Keys(key string, result *MqMsg) error {
 	i, _ := strconv.Atoi(key)
 	if i >= 0 && i < len(r.nodes) {
 		node := r.nodes[i]
-		keysInfo := fmt.Sprintf("Node is running on port %d\nKeys available: ", node.Config.Port)
+		keysInfo := fmt.Sprintf("Node is running on port %d\nAvailable keys: ", node.Config.Port)
 
 		for index, item := range r.dataMap {
 			if item == i {
@@ -116,7 +116,7 @@ func (r *MqRPC) Keys(key string, result *MqMsg) error {
 			}
 		}
 
-		(*result).Value = keysInfo
+		(*result).Value = strings.TrimRight(keysInfo, ", ")
 	} else {
 		errorMsg := fmt.Sprintf("Couldn't found node with number %s", key)
 		return errors.New(errorMsg)
