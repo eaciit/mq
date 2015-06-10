@@ -870,7 +870,7 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 			}
 
 			r.dataMap[msg.Key] = idx
-			r.setTableProperties(msg)
+			// r.setTableProperties(msg)
 			Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
 		} else {
 			Logging("New Key : '"+msg.Key+"' with value: '"+msg.Value.(string)+"', data cannot be transmit, because of memory Allocation all node reach max limit", "INFO")
