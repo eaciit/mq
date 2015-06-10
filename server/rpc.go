@@ -849,7 +849,7 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 			}
 
 			r.dataMap[msg.Key] = idx
-
+			r.setTableProperties(msg)
 			Logging("New Key : '"+msg.Key+"' has already set with value: '"+msg.Value.(string)+"'", "INFO")
 		} else {
 			Logging("New Key : '"+msg.Key+"' with value: '"+msg.Value.(string)+"', data cannot be transmit, because of memory Allocation all node reach max limit", "INFO")
@@ -962,4 +962,43 @@ func (r *MqRPC) Delete(key string, result *MqMsg) error {
 	}
 	Logging("Key : '"+key+"' has been deleted", "INFO")
 	return nil
+}
+
+
+func GetTableByKey(key string) string{
+	tablePositionAtIndex := len(strings.Split(key, "|")) - 2
+	tableName := strings.Split(key, "|")[tablePositionAtIndex]
+	return tableName
+}
+
+func (r *MqRPC) setTableProperties(value MqMsg) {
+	tableName := GetTableByKey(value.Key)
+	table := NewTable(tableName,value.Owner)
+	isTableExist := false
+	for k,v := range r.tables{
+			if k == tableName{
+				*table = v
+				isTableExist = true
+				break
+			}
+	}
+	item := make(map[string]interface{})
+	if !isTableExist{
+		item[value.Key] = value.Value
+		table.Items = item
+		r.tables[tableName] = *table
+		message := fmt.Sprintf("Succesfull add new table %s and the properties ",tableName)
+		Logging (message, "INFO")
+	}else{
+		table.Items[value.Key] = value.Value
+		message := fmt.Sprintf("Succesfull add item, key->%s, value->%s, in table %s",value.Key,value.Value,tableName)
+		Logging (message, "INFO")
+	}
+	setIndex(table)
+	// fmt.Println(r.tables)
+}
+
+func setIndex(t *MqTable){
+	getIndexByRole := func(value interface{}) string {return GetEmployeeRole(value)}
+	t.RunIndex("employeerole",getIndexByRole)
 }
