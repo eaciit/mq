@@ -95,6 +95,11 @@ func (r *MqRPC) Ping(key string, result *MqMsg) error {
 			n.Config.Role,
 			n.ActiveDuration(), n.DataCount, (n.DataSize), (n.AllocatedSize/1024/1024))
 	}
+	for i, n := range r.mirrors {
+		pingInfo = pingInfo + fmt.Sprintf("Mirror %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %d \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
+			n.Config.Role,
+			n.ActiveDuration(), n.DataCount, (n.DataSize), (n.AllocatedSize/1024/1024))
+	}
 	(*result).Value = pingInfo
 	return nil
 }
@@ -418,7 +423,7 @@ func (r *MqRPC) AddMirror(mirrorConfig *ServerConfig, result *MqMsg) error {
 	newNode.AllocatedSize = mirrorConfig.Memory /// 1024 / 1024
 	newNode.isOffline = false
 	r.mirrors = append(r.mirrors, newNode)
-	Logging("New Node has been added successfully", "INFO")
+	Logging("New Mirror has been added successfully", "INFO")
 	return nil
 }
 
