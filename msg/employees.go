@@ -6,6 +6,8 @@ import(
   "strconv"
 )
 
+// json structure in value interface{}
+// {"name":"nanda","role":"petugas"}
 type Employee struct {
 	Name string
 	Role string

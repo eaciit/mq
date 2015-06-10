@@ -985,7 +985,7 @@ func (r *MqRPC) setTableProperties(value MqMsg) {
 		Logging (message, "INFO")
 	}
 	setIndex(table)
-	fmt.Println(r.tables)
+	// fmt.Println(r.tables)
 }
 
 func setIndex(t *MqTable){
