@@ -885,18 +885,23 @@ func (r *MqRPC) GetItem(key string, result *MqMsg) error {
 }
 
 func (r *MqRPC) Get(key string, result *MqMsg) error {
-	node := r.nodes[r.dataMap[key]]
-	client, err := NewMqClient(fmt.Sprintf("%s:%d", node.Config.Name, node.Config.Port), 10*time.Second)
-	if err != nil {
-		errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", node.Config.Name, node.Config.Port)
-		Logging(errorMsg, "ERROR")
-		return errors.New(errorMsg)
-	}
+	if r.dataMap[key] < 0 {
+		// Try accessing data from dead node
+		return errors.New("Unable to get data from node : Data Not Available")
+	} else {
+		node := r.nodes[r.dataMap[key]]
+		client, err := NewMqClient(fmt.Sprintf("%s:%d", node.Config.Name, node.Config.Port), 10*time.Second)
+		if err != nil {
+			errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", node.Config.Name, node.Config.Port)
+			Logging(errorMsg, "ERROR")
+			return errors.New(errorMsg)
+		}
 
-	err = client.CallDirect("GetItem", key, result)
-	if err != nil {
-		errorMsg := fmt.Sprintf("Unable to get data from node : %s", err.Error())
-		return errors.New(errorMsg)
+		err = client.CallDirect("GetItem", key, result)
+		if err != nil {
+			errorMsg := fmt.Sprintf("Unable to get data from node : %s", err.Error())
+			return errors.New(errorMsg)
+		}
 	}
 
 	return nil
