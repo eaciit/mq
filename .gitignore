@@ -1,3 +1,4 @@
 .sass-cache/
-log/
-Log-*.txt
+/log/*
+/tmp/*
+!.keep
