@@ -1,6 +1,9 @@
 package msg
 
 import (
+	"compress/gzip"
+	"encoding/gob"
+	"os"
 	"strings"
 	"time"
 )
@@ -54,4 +57,47 @@ func (msg *MqMsg) BuildKey(owner string, table string, key string) string {
 	}
 
 	return genKey
+}
+
+func (m *MqMsg) loadFromFile(filename string) error {
+
+	fi, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer fi.Close()
+
+	fz, err := gzip.NewReader(fi)
+	if err != nil {
+		return err
+	}
+	defer fz.Close()
+
+	decoder := gob.NewDecoder(fz)
+	err = decoder.Decode(m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *MqMsg) saveToFile(filename string) error {
+
+	fi, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer fi.Close()
+
+	fz := gzip.NewWriter(fi)
+	defer fz.Close()
+
+	encoder := gob.NewEncoder(fz)
+	err = encoder.Encode(m)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
