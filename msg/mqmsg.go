@@ -59,7 +59,7 @@ func (msg *MqMsg) BuildKey(owner string, table string, key string) string {
 	return genKey
 }
 
-func (m *MqMsg) loadFromFile(filename string) error {
+func (m *MqMsg) LoadFromFile(filename string) error {
 
 	fi, err := os.Open(filename)
 	if err != nil {
@@ -82,7 +82,7 @@ func (m *MqMsg) loadFromFile(filename string) error {
 	return nil
 }
 
-func (m *MqMsg) saveToFile(filename string) error {
+func (m *MqMsg) SaveToFile(filename string) error {
 
 	fi, err := os.Create(filename)
 	if err != nil {

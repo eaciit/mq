@@ -991,6 +991,64 @@ func (r *MqRPC) Delete(key string, result *MqMsg) error {
 	return nil
 }
 
+func (r *MqRPC) WriteToDisk(keys []string, result *MqMsg) error {
+	selected := map[int][]string{}
+	if keys[0] != "all" {
+		for _, key := range keys {
+			nodeIndex, exist := r.dataMap[key]
+			if exist {
+				selected[nodeIndex] = append(selected[nodeIndex], key)
+			} else {
+				return errors.New(fmt.Sprintf("Data not found with key: %s", key))
+			}
+		}
+	} else {
+		for nodeIndex := range r.nodes {
+			selected[nodeIndex] = []string{"all"}
+		}
+	}
+
+	for nodeIndex, args := range selected {
+		node := r.nodes[nodeIndex]
+		client, err := NewMqClient(fmt.Sprintf("%s:%d", node.Config.Name, node.Config.Port), 10*time.Second)
+		if err != nil {
+			errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", node.Config.Name, node.Config.Port)
+			Logging(errorMsg, "ERROR")
+			return errors.New(errorMsg)
+		}
+
+		fmt.Println("Sending writing command to node...")
+		err = client.CallDirect("WriteToDiskWithKeys", args, result)
+		if err != nil {
+			errorMsg := fmt.Sprintf("Unable to save data in node : %s", err.Error())
+			return errors.New(errorMsg)
+		}
+	}
+
+	(*result).Value = "Success writing to disk"
+	return nil
+}
+
+func (r *MqRPC) WriteToDiskWithKeys(keys []string, result *MqMsg) error {
+	if keys[0] != "all" {
+		for _, key := range keys {
+			item := r.items[key]
+			err := item.SaveToFile("tmp/" + item.Key + ".dat")
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		for _, item := range r.items {
+			err := item.SaveToFile("tmp/" + item.Key + ".dat")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func GetTableByKey(key string) string {
 	tablePositionAtIndex := len(strings.Split(key, "|")) - 2
 	tableName := strings.Split(key, "|")[tablePositionAtIndex]

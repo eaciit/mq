@@ -61,16 +61,10 @@ func main() {
 		fmt.Print("> ")
 		//fmt.Scanln(&command)
 		line, _, _ := r.ReadLine()
-		command := string(line)
+		command := strings.TrimSpace(string(line))
 		handleError(e)
-		lowerCommand := ""
-		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") || strings.HasPrefix(command, "inc") || strings.HasPrefix(command, "gettable") || strings.HasPrefix(command, "keys") || strings.HasPrefix(command, "info") {
-			stringsPart := strings.Split(command, "(")
-			lowerCommand = strings.ToLower(stringsPart[0])
-		} else {
-			stringsPart := strings.Split(command, " ")
-			lowerCommand = strings.ToLower(stringsPart[0])
-		}
+		stringsPart := strings.Split(command, "(")
+		lowerCommand := strings.ToLower(stringsPart[0])
 
 		if lowerCommand == "exit" {
 			status = "exit"
@@ -128,7 +122,6 @@ func main() {
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			}
-
 		} else if lowerCommand == "inc" {
 			Orikey, incVal := parseIncCommand(command)
 			//owner := c.ClientInfo.Username
@@ -150,7 +143,6 @@ func main() {
 
 				//fmt.Printf("Value: %v \n", msg.Value)
 			}
-
 		} else if lowerCommand == "get" {
 			//--- this to handle get command
 			_, data := parseGetCommand(command)
@@ -208,7 +200,6 @@ func main() {
 			if valPublic == "" && valOwner == "" {
 				fmt.Println("Unable to get message: Data doesn't exist")
 			}
-
 		} else if lowerCommand == "getlog" {
 			commandParts := strings.Split(command, " ")
 			key := commandParts[1]
@@ -276,6 +267,33 @@ func main() {
 			fmt.Println("Last Access : ", s.LastAccess)
 			fmt.Println("Expiry      : ", s.Expiry)
 			fmt.Println("Permission  : ", s.Permission)
+		} else if lowerCommand == "writetodisk" {
+			fullArg := parseSingleValueCommand("writetodisk", command)
+			// For now only public key
+
+			args := []string{}
+			if fullArg == "" {
+				args = []string{"all"}
+			} else {
+				args = strings.Split(fullArg, ",")
+				for i := range args {
+					args[i] = "public|" + args[i]
+				}
+			}
+
+			s, e := c.CallString("WriteToDisk", args)
+			handleError(e)
+			fmt.Println(s)
+		} else if lowerCommand == "readfromdisk" {
+			args := strings.Split(parseSingleValueCommand("readfromdisk", command), ",")
+			// For now only public key
+			for i := range args {
+				args[i] += "public|"
+			}
+
+			s, e := c.CallString("ReadFromDisk", args)
+			handleError(e)
+			fmt.Println(s)
 		} else {
 			errorMsg := "Unable to find command " + command
 			//c.CallToLog(errorMsg,"ERROR")
@@ -337,7 +355,7 @@ func commandToObject(data string) MqMsg {
 }
 
 func parseSingleValueCommand(prefix string, command string) string {
-	match, _ := regexp.MatchString(prefix+"()", command)
+	match, _ := regexp.MatchString(prefix+"()", strings.ToLower(command))
 	if match == true {
 		splitSet := strings.Split(command, prefix+"(")[1]
 		data := strings.TrimRight(splitSet, ")")
