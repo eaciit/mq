@@ -125,6 +125,12 @@ func (r *MqRPC) Keys(key string, result *MqMsg) error {
 	return nil
 }
 
+func (r *MqRPC) ItemLocation(key string, result *MqMsg) error {
+	node := r.nodes[r.dataMap[key]]
+	(*result).Value = fmt.Sprintf("Stored in node %d running on %s:%d", r.dataMap[key], node.Config.Name, node.Config.Port)
+	return nil
+}
+
 func (r *MqRPC) Items(key string, result *MqMsg) error {
 	buf, e := Encode(r.items)
 	result.Value = buf.Bytes()

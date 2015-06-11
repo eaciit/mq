@@ -64,7 +64,7 @@ func main() {
 		command := string(line)
 		handleError(e)
 		lowerCommand := ""
-		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") || strings.HasPrefix(command, "inc") || strings.HasPrefix(command, "gettable") || strings.HasPrefix(command, "keys") {
+		if strings.HasPrefix(command, "get") || strings.HasPrefix(command, "set") || strings.HasPrefix(command, "inc") || strings.HasPrefix(command, "gettable") || strings.HasPrefix(command, "keys") || strings.HasPrefix(command, "info") {
 			stringsPart := strings.Split(command, "(")
 			lowerCommand = strings.ToLower(stringsPart[0])
 		} else {
@@ -206,7 +206,7 @@ func main() {
 				fmt.Println("Value : ", valOwner)
 			}
 			if valPublic == "" && valOwner == "" {
-				fmt.Println("Unable to store message: Data doesn't exist")
+				fmt.Println("Unable to get message: Data doesn't exist")
 			}
 
 		} else if lowerCommand == "getlog" {
@@ -260,6 +260,22 @@ func main() {
 			s, e := c.CallString("Keys", arg)
 			handleError(e)
 			fmt.Println(s)
+		} else if lowerCommand == "info" {
+			arg := "public|" + parseSingleValueCommand("info", command)
+			location, e := c.CallString("ItemLocation", arg)
+			handleError(e)
+			s, e := c.Call("Get", arg)
+			handleError(e)
+
+			fmt.Println(location)
+			fmt.Println("Key         : ", s.Key)
+			fmt.Println("Value       : ", s.Value)
+			fmt.Println("Table       : ", s.Table)
+			fmt.Println("Owner       : ", s.Owner)
+			fmt.Println("Created     : ", s.Created)
+			fmt.Println("Last Access : ", s.LastAccess)
+			fmt.Println("Expiry      : ", s.Expiry)
+			fmt.Println("Permission  : ", s.Permission)
 		} else {
 			errorMsg := "Unable to find command " + command
 			//c.CallToLog(errorMsg,"ERROR")
