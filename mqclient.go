@@ -269,14 +269,13 @@ func main() {
 			fmt.Println("Permission  : ", s.Permission)
 		} else if lowerCommand == "writetodisk" {
 			fullArg := parseSingleValueCommand("writetodisk", command)
-			// For now only public key
-
 			args := []string{}
 			if fullArg == "" {
 				args = []string{"all"}
 			} else {
 				args = strings.Split(fullArg, ",")
 				for i := range args {
+					// For now only public key
 					args[i] = "public|" + args[i]
 				}
 			}
@@ -285,10 +284,16 @@ func main() {
 			handleError(e)
 			fmt.Println(s)
 		} else if lowerCommand == "readfromdisk" {
-			args := strings.Split(parseSingleValueCommand("readfromdisk", command), ",")
-			// For now only public key
-			for i := range args {
-				args[i] += "public|"
+			fullArg := parseSingleValueCommand("readfromdisk", command)
+			args := []string{}
+			if fullArg == "" {
+				args = []string{"all"}
+			} else {
+				args = strings.Split(fullArg, ",")
+				for i := range args {
+					// For now only public key
+					args[i] = "public|" + args[i]
+				}
 			}
 
 			s, e := c.CallString("ReadFromDisk", args)
@@ -355,7 +360,7 @@ func commandToObject(data string) MqMsg {
 }
 
 func parseSingleValueCommand(prefix string, command string) string {
-	match, _ := regexp.MatchString(prefix+"()", strings.ToLower(command))
+	match := strings.Contains(strings.ToLower(command), prefix+"(")
 	if match == true {
 		splitSet := strings.Split(command, prefix+"(")[1]
 		data := strings.TrimRight(splitSet, ")")

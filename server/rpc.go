@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -992,6 +994,7 @@ func (r *MqRPC) Delete(key string, result *MqMsg) error {
 }
 
 func (r *MqRPC) WriteToDisk(keys []string, result *MqMsg) error {
+	// TODO: Use async for sending command to all node
 	selected := map[int][]string{}
 	if keys[0] != "all" {
 		for _, key := range keys {
@@ -1039,11 +1042,81 @@ func (r *MqRPC) WriteToDiskWithKeys(keys []string, result *MqMsg) error {
 			}
 		}
 	} else {
+		// write all to tmp folder
 		for _, item := range r.items {
 			err := item.SaveToFile("tmp/" + item.Key + ".dat")
 			if err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func (r *MqRPC) ReadFromDisk(keys []string, result *MqMsg) error {
+	selected := map[int][]string{}
+	if keys[0] != "all" {
+		// TODO: Implementing if client give specific keys
+	} else {
+		for nodeIndex := range r.nodes {
+			selected[nodeIndex] = []string{"all"}
+		}
+	}
+
+	for nodeIndex, args := range selected {
+		node := r.nodes[nodeIndex]
+		client, err := NewMqClient(fmt.Sprintf("%s:%d", node.Config.Name, node.Config.Port), 10*time.Second)
+		if err != nil {
+			errorMsg := fmt.Sprintf("Unable connect to node %s:%d\n", node.Config.Name, node.Config.Port)
+			Logging(errorMsg, "ERROR")
+			return errors.New(errorMsg)
+		}
+
+		fmt.Println("Sending reading command to node...")
+		keysSuccess := []string{}
+		err = client.CallDirect("ReadFromDiskWithKeys", args, &keysSuccess)
+		if err != nil {
+			errorMsg := fmt.Sprintf("Unable to read data in node : %s", err.Error())
+			return errors.New(errorMsg)
+		}
+
+		for _, key := range keysSuccess {
+			r.dataMap[key] = nodeIndex
+			fmt.Printf("Success read data from disk with key: %s in node: %d\n", key, nodeIndex)
+		}
+	}
+
+	(*result).Value = "Success reading from disk"
+	return nil
+}
+
+func (r *MqRPC) ReadFromDiskWithKeys(keys []string, result *[]string) error {
+	if keys[0] != "all" {
+		for _, key := range keys {
+			item := r.items[key]
+			err := item.LoadFromFile("tmp/" + item.Key + ".dat")
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		// Read all from tmp folder
+		files, err := ioutil.ReadDir("tmp/")
+		if err == nil {
+			for _, f := range files {
+				if match, _ := regexp.MatchString(".*\\.dat$", f.Name()); match {
+					item := MqMsg{}
+					err = item.LoadFromFile("tmp/" + f.Name())
+					if err != nil {
+						return err
+					}
+
+					r.items[item.Key] = item
+					*result = append(*result, item.Key)
+				}
+			}
+		} else {
+			return err
 		}
 	}
 	return nil
