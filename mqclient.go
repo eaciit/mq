@@ -252,7 +252,7 @@ func main() {
 			handleError(e)
 			fmt.Println(s)
 		} else if lowerCommand == "info" {
-			arg := "public|" + parseSingleValueCommand("info", command)
+			arg := "|public|" + parseSingleValueCommand("info", command)
 			location, e := c.CallString("ItemLocation", arg)
 			handleError(e)
 			s, e := c.Call("Get", arg)

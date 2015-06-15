@@ -81,3 +81,7 @@ func Errorable(err error, callbacks ...func()) {
 func AsString(val interface{}) string {
 	return fmt.Sprintf("%v", val)
 }
+
+func FloatToString(val interface{}) string{
+	return fmt.Sprintf("%.2f",val)
+}

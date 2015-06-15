@@ -91,16 +91,16 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 
 func (r *MqRPC) Ping(key string, result *MqMsg) error {
 	pingInfo := fmt.Sprintf("Server is running on port %s\n", strconv.Itoa(r.Config.Port))
-	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize (MB) \t\t\t|  MaxMemorySize (MB)\t\t\t \n")
+	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize \t\t\t|  MaxMemorySize\t\t\t \n")
 	for i, n := range r.nodes {
-		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %d \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
+		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %s \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
 			n.Config.Role,
-			n.ActiveDuration(), n.DataCount, (n.DataSize), (n.AllocatedSize/1024/1024))
+			n.ActiveDuration(), n.DataCount, relevantDataSize((n.DataSize)), (n.AllocatedSize/1024/1024))
 	}
 	for i, n := range r.mirrors {
-		pingInfo = pingInfo + fmt.Sprintf("Mirror %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %d \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
+		pingInfo = pingInfo + fmt.Sprintf("Mirror %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %s \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
 			n.Config.Role,
-			n.ActiveDuration(), n.DataCount, (n.DataSize), (n.AllocatedSize/1024/1024))
+			n.ActiveDuration(), n.DataCount, relevantDataSize((n.DataSize)), (n.AllocatedSize/1024/1024))
 	}
 	(*result).Value = pingInfo
 	return nil
@@ -813,7 +813,9 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 		// Store data to all existing mirror
 		for key, mirror := range r.mirrors {
 			r.mirrors[key].DataCount += 1
-			r.mirrors[key].DataSize += int64(buf.Len()) / 1024 / 1024
+			// set data size to byte size
+			r.mirrors[key].DataSize += int64(buf.Len())
+			// r.mirrors[key].DataSize += int64(buf.Len()) / 1024 / 1024
 
 			client, e := NewMqClient(fmt.Sprintf("%s:%d", mirror.Config.Name, mirror.Config.Port), 10*time.Second)
 			if e != nil {
@@ -833,7 +835,9 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 
 		if r.nodes[idx].AllocatedSize > (r.nodes[idx].DataSize + int64(buf.Len())) {
 			r.nodes[idx].DataCount += 1
-			r.nodes[idx].DataSize += int64(buf.Len()) / 1024 / 1024
+			// set data size to byte size
+			r.nodes[idx].DataSize += int64(buf.Len())
+			// r.nodes[idx].DataSize += int64(buf.Len()) / 1024 / 1024
 
 			fmt.Println("Data has been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
 			msg.LastAccess = time.Now()
@@ -1158,4 +1162,19 @@ func (r *MqRPC) setTableProperties(value MqMsg) {
 func setIndex(t *MqTable) {
 	getIndexByRole := func(value interface{}) string { return GetEmployeeRole(value) }
 	t.RunIndex("employeerole", getIndexByRole)
+}
+
+func relevantDataSize(size int64) string {
+	const MBSize = 1048576.0
+	const KBSize = 1024.0
+	const minBytes = 100.0
+	var sizeFormat string
+	if size >= MBSize {
+		sizeFormat = FloatToString(float32(size)/MBSize) + " MB"
+	} else if size >= minBytes {
+		sizeFormat = FloatToString(float32(size)/KBSize) + " KB"
+	} else {
+		sizeFormat = AsString(size) + " Bytes"
+	}
+	return sizeFormat
 }
