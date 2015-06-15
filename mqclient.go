@@ -250,21 +250,23 @@ func main() {
 			handleError(e)
 			fmt.Println(s)
 		} else if lowerCommand == "info" {
-			arg := "|public|" + parseSingleValueCommand("info", command)
+			arg := "public|" + parseSingleValueCommand("info", command)
 			location, e := c.CallString("ItemLocation", arg)
 			handleError(e)
 			s, e := c.Call("Get", arg)
 			handleError(e)
 
-			fmt.Println(location)
-			fmt.Println("Key         : ", s.Key)
-			fmt.Println("Value       : ", s.Value)
-			fmt.Println("Table       : ", s.Table)
-			fmt.Println("Owner       : ", s.Owner)
-			fmt.Println("Created     : ", s.Created)
-			fmt.Println("Last Access : ", s.LastAccess)
-			fmt.Println("Expiry      : ", s.Expiry)
-			fmt.Println("Permission  : ", s.Permission)
+			if e != nil {
+				fmt.Println(location)
+				fmt.Println("Key         : ", s.Key)
+				fmt.Println("Value       : ", s.Value)
+				fmt.Println("Table       : ", s.Table)
+				fmt.Println("Owner       : ", s.Owner)
+				fmt.Println("Created     : ", s.Created)
+				fmt.Println("Last Access : ", s.LastAccess)
+				fmt.Println("Expiry      : ", s.Expiry)
+				fmt.Println("Permission  : ", s.Permission)
+			}
 		} else if lowerCommand == "writetodisk" {
 			fullArg := parseSingleValueCommand("writetodisk", command)
 			args := []string{}
