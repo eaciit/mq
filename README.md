@@ -1,7 +1,7 @@
 # eaciit-mq
 Memory Data Que management developed using GoLang
 
-Starting Node as Master
+##Starting Node as Master
 
 ```
 go run mqd.go 
@@ -28,7 +28,7 @@ Adding ```-mirror``` will start node as mirror
 Node will automatically start as mirror with master on localhost:7890
 Note : mirror port must different with master port
 
-List client commands :
+##List client commands :
 
 ```
 1.  exit
@@ -50,7 +50,56 @@ List client commands :
 17. readfromdisk(key1,key2,...)
 ```
 
-Format key,value,nodenumber :
+##User Management Command
+
+###Adding new user
+
+``` 
+addUser(username,password,role) 
+```
+example: 
+``` 
+addUser(eaciit,master,admin) 
+```
+this command will add new user with username: "eaciit", password: "master", role: "admin"
+Note : only admin can add new user
+
+###Change Password of Current User
+
+``` 
+changePassword(newPassword)
+```
+example: 
+``` 
+changePassword(secret)
+```
+this command will change current user password to secret
+
+###Delete existing user
+
+``` 
+deleteUser(username1,username2,username3,...)
+```
+example: 
+``` 
+deleteUser(eaciit1,eaciit2) 
+```
+will delete user with username "eaciit1" and "eaciit2"
+Note : only admin can delete existing user
+
+###Updating new user
+
+``` 
+updateUser(username,password,role) 
+```
+example: 
+``` 
+updateUser(eaciit,secret,admin) 
+```
+will update password and role of existing user with username  "eaciit" to password: "secret" and role: "admin"
+Note : only admin can update existing user
+
+##Format key,value,nodenumber :
 
 ```
 1.  key   -> tablename|key, ex : employees|emp1
