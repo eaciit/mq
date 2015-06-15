@@ -24,6 +24,7 @@ List commands :
 
 
 Format key,value,nodenumber :
+
 1.  key   -> tablename|key, ex : employees|emp1
 2.  value -> json format, ex : {"name":"nanda","role":"admin"}
 3.  nodenumber -> ex : 0
