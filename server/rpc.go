@@ -273,17 +273,11 @@ func (r *MqRPC) DeleteUser(value MqMsg, result *MqMsg) error {
 func (r *MqRPC) ChangePassword(value MqMsg, result *MqMsg) error {
 	UserName := value.Key
 	Password := GetMD5Hash(value.Value.(string))
-	Role := "admin"
 	userFound := false
 	for i, u := range r.users {
 		//listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
 		if u.UserName == UserName {
-			newUser := MqUser{}
-			newUser.UserName = UserName
-			newUser.Password = Password
-			newUser.Role = Role
-			newUser.DateCreated = r.users[i].DateCreated
-			r.users[i] = newUser
+			r.users[i].Password = Password
 			userFound = true
 		}
 	}

@@ -220,7 +220,7 @@ func main() {
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			}
-		} else if lowerCommand == "deleteuser" {
+		} else if lowerCommand == "deleteuser" && ActiveUser.Role == "admin" {
 			//--- this to handle set command
 			commandParts := strings.Split(command, " ")
 			userName := commandParts[1]
@@ -233,15 +233,13 @@ func main() {
 			}
 		} else if lowerCommand == "changepassword" {
 			//--- this to handle set command
-			commandParts := strings.Split(command, " ")
-			userName := commandParts[1]
-			password := strings.Join(commandParts[2:], " ")
-			msg := MqMsg{Key: userName, Value: password}
-			i, e := c.Call("ChangePassword", msg)
+			password := parseSingleValueCommand("changepassword", command)
+			msg := MqMsg{Key: ActiveUser.Username, Value: password}
+			s, e := c.CallString("ChangePassword", msg)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			} else {
-				fmt.Println(i.Value.(string))
+				fmt.Println(s)
 			}
 		} else if lowerCommand == "getlistusers" {
 			s, e := c.CallString("GetListUsers", "")
