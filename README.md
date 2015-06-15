@@ -51,6 +51,12 @@ Note : mirror port must different with master port
 16. writetodisk(key1,key2,...)
 17. readfromdisk(key1,key2,...)
 ```
+###Format key,value,nodenumber :
+```
+1.  key   -> tablename|key, ex : employees|emp1
+2.  value -> json format, ex : {"name":"nanda","role":"admin"}
+3.  nodenumber -> ex : 0
+```
 
 ##User Management Command
 
@@ -101,10 +107,4 @@ updateUser(eaciit,secret,admin)
 will update password and role of existing user with username  "eaciit" to password: "secret" and role: "admin"
 Note : only admin can update existing user
 
-##Format key,value,nodenumber :
 
-```
-1.  key   -> tablename|key, ex : employees|emp1
-2.  value -> json format, ex : {"name":"nanda","role":"admin"}
-3.  nodenumber -> ex : 0
-```
