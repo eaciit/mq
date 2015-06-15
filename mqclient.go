@@ -222,9 +222,8 @@ func main() {
 			}
 		} else if lowerCommand == "deleteuser" && ActiveUser.Role == "admin" {
 			//--- this to handle set command
-			commandParts := strings.Split(command, " ")
-			userName := commandParts[1]
-			msg := MqMsg{Key: userName, Value: userName}
+			userNames := parseSingleValueCommand("deleteuser", command)
+			msg := MqMsg{Key: userNames, Value: userNames}
 			i, e := c.Call("DeleteUser", msg)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())

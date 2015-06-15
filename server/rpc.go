@@ -256,17 +256,27 @@ func UpdateUserFile(r *MqRPC) {
 }
 
 func (r *MqRPC) DeleteUser(value MqMsg, result *MqMsg) error {
-	UserName := value.Value.(string)
-	Users := []MqUser{}
+	userNames := strings.Split(value.Value.(string), ",")
+	users := []MqUser{}
+	founds := []string{}
 	for _, u := range r.users {
-		//listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
-		if u.UserName != UserName {
-			Users = append(Users, u)
+		match := false
+		for _, userName := range userNames {
+			if u.UserName == userName {
+				match = true
+				break
+			}
+		}
+
+		if !match {
+			users = append(users, u)
+		} else {
+			founds = append(founds, u.UserName)
 		}
 	}
-	r.users = Users
+	r.users = users
 	UpdateUserFile(r)
-	(*result).Value = fmt.Sprintf("User:%s has been deleted", UserName)
+	(*result).Value = fmt.Sprintf("User:%s has been deleted", strings.Join(founds, ", "))
 	return nil
 }
 
@@ -275,7 +285,6 @@ func (r *MqRPC) ChangePassword(value MqMsg, result *MqMsg) error {
 	Password := GetMD5Hash(value.Value.(string))
 	userFound := false
 	for i, u := range r.users {
-		//listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
 		if u.UserName == UserName {
 			r.users[i].Password = Password
 			userFound = true
