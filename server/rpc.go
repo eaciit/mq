@@ -332,9 +332,6 @@ func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	splitKey := strings.Split(value.Key, "|")
 	userName := splitKey[0]
 	role := splitKey[1]
-	if role == "" {
-		role = "admin"
-	}
 	password := GetMD5Hash(value.Value.(string))
 	userIndex := r.findUser(userName)
 	userFound := userIndex >= 0
@@ -351,12 +348,35 @@ func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	newUser.DateCreated = time.Now()
 	r.users = append(r.users, newUser)
 
-	// *result = newUser
-
 	//save user to file
 	UpdateUserFile(r)
 
-	Logging("New User: "+userName+" has been added with password: "+password, "INFO")
+	msg := "New User: " + userName + " has been added"
+	(*result).Value = msg
+	Logging(msg, "INFO")
+	return nil
+}
+
+func (r *MqRPC) UpdateUser(value MqMsg, result *MqMsg) error {
+	//check existing user
+	splitKey := strings.Split(value.Key, "|")
+	userName := splitKey[0]
+	role := splitKey[1]
+	password := GetMD5Hash(value.Value.(string))
+	userIndex := r.findUser(userName)
+	userFound := userIndex >= 0
+	if !userFound {
+		return errors.New("Unable to update user:" + userName + " not found")
+	}
+
+	r.users[userIndex].Password = password
+	r.users[userIndex].Role = role
+
+	//save user to file
+	UpdateUserFile(r)
+	msg := "User: " + userName + " has been updated"
+	(*result).Value = msg
+	Logging(msg, "INFO")
 	return nil
 }
 

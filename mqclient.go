@@ -216,9 +216,25 @@ func main() {
 			role := commandParts[2]
 
 			msg := MqMsg{Key: userName + "|" + role, Value: password}
-			_, e := c.Call("AddUser", msg)
+			s, e := c.CallString("AddUser", msg)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
+			} else {
+				fmt.Println(s)
+			}
+		} else if lowerCommand == "updateuser" && ActiveUser.Role == "admin" {
+			//--- this to handle set command
+			commandParts := strings.Split(parseSingleValueCommand("updateuser", command), ",")
+			userName := commandParts[0]
+			password := commandParts[1]
+			role := commandParts[2]
+
+			msg := MqMsg{Key: userName + "|" + role, Value: password}
+			s, e := c.CallString("UpdateUser", msg)
+			if e != nil {
+				fmt.Println("Unable to store message: " + e.Error())
+			} else {
+				fmt.Println(s)
 			}
 		} else if lowerCommand == "deleteuser" && ActiveUser.Role == "admin" {
 			//--- this to handle set command
