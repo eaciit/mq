@@ -1,31 +1,33 @@
 # eaciit-mq
 Memory Data Que management developed using GoLang
 
-##Starting Node as Master
+##Running Server / Node
+
+###Running Node as Master
 
 ```
 go run mqd.go 
 ```
 
-Node will automatically start on localhost:7890
+Node will automatically run as server on localhost:7890
 
-Starting Node as Slave
+###Running Node as Slave
 
 ```
 go run mqd.go -master 127.0.0.1:7890 -port 7891
 ```
 
-Node will automatically start as slave with master on localhost:7890
+Node will automatically run as slave with master on localhost:7890
 Note : slave port must different with master port
 
-Starting Node as Mirror
+###Running Node as Mirror
 
 ```
 go run mqd.go -master 127.0.0.1:7890 -port 7892 -mirror
 ```
 
-Adding ```-mirror``` will start node as mirror
-Node will automatically start as mirror with master on localhost:7890
+Adding ```-mirror``` will run node as mirror
+Node will automatically run as mirror with master on localhost:7890
 Note : mirror port must different with master port
 
 ##List client commands :
