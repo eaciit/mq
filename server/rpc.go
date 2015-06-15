@@ -91,7 +91,7 @@ func NewRPC(cfg *ServerConfig) *MqRPC {
 
 func (r *MqRPC) Ping(key string, result *MqMsg) error {
 	pingInfo := fmt.Sprintf("Server is running on port %s\n", strconv.Itoa(r.Config.Port))
-	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize \t\t\t|  MaxMemorySize (MB)\t\t\t \n")
+	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize \t\t\t|  MaxMemorySize\t\t\t \n")
 	for i, n := range r.nodes {
 		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %s \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
 			n.Config.Role,
@@ -1164,18 +1164,17 @@ func setIndex(t *MqTable) {
 	t.RunIndex("employeerole", getIndexByRole)
 }
 
-
-func relevantDataSize(size int64) string{
+func relevantDataSize(size int64) string {
 	const MBSize = 1048576.0
 	const KBSize = 1024.0
 	const minBytes = 100.0
 	var sizeFormat string
-	if size >= MBSize{
-			sizeFormat = FloatToString(float32(size)/MBSize) + " MB"
-	}else if size >= minBytes {
-			sizeFormat = FloatToString(float32(size)/KBSize) + " KB"
-	}else{
-			sizeFormat = AsString(size) + " Bytes"
+	if size >= MBSize {
+		sizeFormat = FloatToString(float32(size)/MBSize) + " MB"
+	} else if size >= minBytes {
+		sizeFormat = FloatToString(float32(size)/KBSize) + " KB"
+	} else {
+		sizeFormat = AsString(size) + " Bytes"
 	}
 	return sizeFormat
 }
