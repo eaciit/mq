@@ -140,7 +140,9 @@ func (r *MqRPC) Items(key string, result *MqMsg) error {
 }
 
 func (r *MqRPC) Nodes(key string, result *MqMsg) error {
-	buf, e := Encode(r.nodes)
+	nodes := r.nodes
+	nodes = append(nodes,r.mirrors...)
+	buf, e := Encode(nodes)
 	result.Value = buf.Bytes()
 	return e
 }
