@@ -24,7 +24,7 @@ func main() {
 	isLoggedIn := c.ClientInfo.IsLoggedIn
 
 	r := bufio.NewReader(os.Stdin)
-	ActiveUser := ""
+	ActiveUser := ClientInfo{}
 	for !isLoggedIn {
 		fmt.Print("UserName: ")
 		getUserName, _, _ := r.ReadLine()
@@ -40,11 +40,11 @@ func main() {
 		if i.Value.(ClientInfo).IsLoggedIn {
 			isLoggedIn = true
 			Role = i.Value.(ClientInfo).Role
-			ActiveUser = i.Value.(ClientInfo).Username
+			ActiveUser = i.Value.(ClientInfo)
 		}
 
 		if isLoggedIn {
-			scrMsg := fmt.Sprintf("Login Succesfull, your role is: %s with username: %s ", Role, ActiveUser)
+			scrMsg := fmt.Sprintf("Login Succesfull, your role is: %s with username: %s ", Role, ActiveUser.Username)
 
 			fmt.Println(scrMsg)
 		} else {
@@ -85,7 +85,7 @@ func main() {
 		} else if lowerCommand == "gettable" {
 			_, data := parseGetTableCommand(command)
 			tableName := data.Key
-			ownerName := ActiveUser + "|" + data.Owner
+			ownerName := ActiveUser.Username + "|" + data.Owner
 			// if ownerName == "" {
 			// 	ownerName = ActiveUser
 			// } else {
@@ -185,9 +185,9 @@ func main() {
 			//if owner = "", looping 2x, first get as public, second get as specified user
 			if own == "" {
 				valPublic = getValue("public|"+keyx, c)
-				valOwner = getValue(ActiveUser+"|"+keyx, c)
+				valOwner = getValue(ActiveUser.Username+"|"+keyx, c)
 			} else {
-				valOwner = getValue(ActiveUser+"|"+keyx, c)
+				valOwner = getValue(ActiveUser.Username+"|"+keyx, c)
 			}
 
 			if valPublic != "" {
@@ -208,22 +208,38 @@ func main() {
 			s, e := c.CallString("GetLogData", msg)
 			handleError(e)
 			fmt.Println(s)
-		} else if lowerCommand == "adduser" {
+		} else if lowerCommand == "adduser" && ActiveUser.Role == "admin" {
 			//--- this to handle set command
-			commandParts := strings.Split(command, " ")
-			userName := commandParts[1]
+			commandParts := strings.Split(parseSingleValueCommand("adduser", command), ",")
+			userName := commandParts[0]
+			password := commandParts[1]
 			role := commandParts[2]
-			password := strings.Join(commandParts[3:], " ")
+
 			msg := MqMsg{Key: userName + "|" + role, Value: password}
-			_, e := c.Call("AddUser", msg)
+			s, e := c.CallString("AddUser", msg)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
+			} else {
+				fmt.Println(s)
 			}
-		} else if lowerCommand == "deleteuser" {
+		} else if lowerCommand == "updateuser" && ActiveUser.Role == "admin" {
 			//--- this to handle set command
-			commandParts := strings.Split(command, " ")
-			userName := commandParts[1]
-			msg := MqMsg{Key: userName, Value: userName}
+			commandParts := strings.Split(parseSingleValueCommand("updateuser", command), ",")
+			userName := commandParts[0]
+			password := commandParts[1]
+			role := commandParts[2]
+
+			msg := MqMsg{Key: userName + "|" + role, Value: password}
+			s, e := c.CallString("UpdateUser", msg)
+			if e != nil {
+				fmt.Println("Unable to store message: " + e.Error())
+			} else {
+				fmt.Println(s)
+			}
+		} else if lowerCommand == "deleteuser" && ActiveUser.Role == "admin" {
+			//--- this to handle set command
+			userNames := parseSingleValueCommand("deleteuser", command)
+			msg := MqMsg{Key: userNames, Value: userNames}
 			i, e := c.Call("DeleteUser", msg)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
@@ -232,15 +248,13 @@ func main() {
 			}
 		} else if lowerCommand == "changepassword" {
 			//--- this to handle set command
-			commandParts := strings.Split(command, " ")
-			userName := commandParts[1]
-			password := strings.Join(commandParts[2:], " ")
-			msg := MqMsg{Key: userName, Value: password}
-			i, e := c.Call("ChangePassword", msg)
+			password := parseSingleValueCommand("changepassword", command)
+			msg := MqMsg{Key: ActiveUser.Username, Value: password}
+			s, e := c.CallString("ChangePassword", msg)
 			if e != nil {
 				fmt.Println("Unable to store message: " + e.Error())
 			} else {
-				fmt.Println(i.Value.(string))
+				fmt.Println(s)
 			}
 		} else if lowerCommand == "getlistusers" {
 			s, e := c.CallString("GetListUsers", "")
@@ -252,21 +266,23 @@ func main() {
 			handleError(e)
 			fmt.Println(s)
 		} else if lowerCommand == "info" {
-			arg := "|public|" + parseSingleValueCommand("info", command)
+			arg := "public|" + parseSingleValueCommand("info", command)
 			location, e := c.CallString("ItemLocation", arg)
 			handleError(e)
 			s, e := c.Call("Get", arg)
 			handleError(e)
 
-			fmt.Println(location)
-			fmt.Println("Key         : ", s.Key)
-			fmt.Println("Value       : ", s.Value)
-			fmt.Println("Table       : ", s.Table)
-			fmt.Println("Owner       : ", s.Owner)
-			fmt.Println("Created     : ", s.Created)
-			fmt.Println("Last Access : ", s.LastAccess)
-			fmt.Println("Expiry      : ", s.Expiry)
-			fmt.Println("Permission  : ", s.Permission)
+			if e != nil {
+				fmt.Println(location)
+				fmt.Println("Key         : ", s.Key)
+				fmt.Println("Value       : ", s.Value)
+				fmt.Println("Table       : ", s.Table)
+				fmt.Println("Owner       : ", s.Owner)
+				fmt.Println("Created     : ", s.Created)
+				fmt.Println("Last Access : ", s.LastAccess)
+				fmt.Println("Expiry      : ", s.Expiry)
+				fmt.Println("Permission  : ", s.Permission)
+			}
 		} else if lowerCommand == "writetodisk" {
 			fullArg := parseSingleValueCommand("writetodisk", command)
 			args := []string{}

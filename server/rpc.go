@@ -258,34 +258,37 @@ func UpdateUserFile(r *MqRPC) {
 }
 
 func (r *MqRPC) DeleteUser(value MqMsg, result *MqMsg) error {
-	UserName := value.Value.(string)
-	Users := []MqUser{}
+	userNames := strings.Split(value.Value.(string), ",")
+	users := []MqUser{}
+	founds := []string{}
 	for _, u := range r.users {
-		//listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
-		if u.UserName != UserName {
-			Users = append(Users, u)
+		match := false
+		for _, userName := range userNames {
+			if u.UserName == userName {
+				match = true
+				break
+			}
+		}
+
+		if !match {
+			users = append(users, u)
+		} else {
+			founds = append(founds, u.UserName)
 		}
 	}
-	r.users = Users
+	r.users = users
 	UpdateUserFile(r)
-	(*result).Value = fmt.Sprintf("User:%s has been deleted", UserName)
+	(*result).Value = fmt.Sprintf("User:%s has been deleted", strings.Join(founds, ", "))
 	return nil
 }
 
 func (r *MqRPC) ChangePassword(value MqMsg, result *MqMsg) error {
 	UserName := value.Key
 	Password := GetMD5Hash(value.Value.(string))
-	Role := "admin"
 	userFound := false
 	for i, u := range r.users {
-		//listUser = listUser + fmt.Sprintf("%s \t|%s \n", u.UserName, u.Password)
 		if u.UserName == UserName {
-			newUser := MqUser{}
-			newUser.UserName = UserName
-			newUser.Password = Password
-			newUser.Role = Role
-			newUser.DateCreated = r.users[i].DateCreated
-			r.users[i] = newUser
+			r.users[i].Password = Password
 			userFound = true
 		}
 	}
@@ -331,9 +334,6 @@ func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	splitKey := strings.Split(value.Key, "|")
 	userName := splitKey[0]
 	role := splitKey[1]
-	if role == "" {
-		role = "admin"
-	}
 	password := GetMD5Hash(value.Value.(string))
 	userIndex := r.findUser(userName)
 	userFound := userIndex >= 0
@@ -350,12 +350,35 @@ func (r *MqRPC) AddUser(value MqMsg, result *MqMsg) error {
 	newUser.DateCreated = time.Now()
 	r.users = append(r.users, newUser)
 
-	// *result = newUser
-
 	//save user to file
 	UpdateUserFile(r)
 
-	Logging("New User: "+userName+" has been added with password: "+password, "INFO")
+	msg := "New User: " + userName + " has been added"
+	(*result).Value = msg
+	Logging(msg, "INFO")
+	return nil
+}
+
+func (r *MqRPC) UpdateUser(value MqMsg, result *MqMsg) error {
+	//check existing user
+	splitKey := strings.Split(value.Key, "|")
+	userName := splitKey[0]
+	role := splitKey[1]
+	password := GetMD5Hash(value.Value.(string))
+	userIndex := r.findUser(userName)
+	userFound := userIndex >= 0
+	if !userFound {
+		return errors.New("Unable to update user:" + userName + " not found")
+	}
+
+	r.users[userIndex].Password = password
+	r.users[userIndex].Role = role
+
+	//save user to file
+	UpdateUserFile(r)
+	msg := "User: " + userName + " has been updated"
+	(*result).Value = msg
+	Logging(msg, "INFO")
 	return nil
 }
 

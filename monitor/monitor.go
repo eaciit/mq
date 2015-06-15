@@ -209,7 +209,7 @@ func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err
 		}
 
 		if owner != "" {
-			keyParsed = fmt.Sprintf("%s|%s", keyParsed, owner)
+			keyParsed = fmt.Sprintf("%s", owner)
 		}
 
 		if table != "" {
