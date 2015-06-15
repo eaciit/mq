@@ -30,6 +30,7 @@ Note : mirror port must different with master port
 
 List client commands :
 
+```
 1.  exit
 2.  kill
 3.  ping
@@ -47,10 +48,12 @@ List client commands :
 15. info(key)
 16. writetodisk(key1,key2,...)
 17. readfromdisk(key1,key2,...)
-
+```
 
 Format key,value,nodenumber :
 
+```
 1.  key   -> tablename|key, ex : employees|emp1
 2.  value -> json format, ex : {"name":"nanda","role":"admin"}
 3.  nodenumber -> ex : 0
+```
