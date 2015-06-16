@@ -273,7 +273,51 @@ func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err
 
 			return
 		} else if mode == "write"{
-			
+			args := []string{}
+			if key == "" {
+				args = []string{"all"}
+			} else {
+				args = strings.Split(key, ",")
+				for i := range args {
+					// For now only public key
+					args[i] = "public|" + args[i]
+				}
+			}
+
+			rpcDo(w, client, func() error {
+				msg, err := client.CallString("WriteToDisk", args)
+
+				if err == nil {
+					PrintJSON(w, true, msg, "")
+				}
+
+				return err
+			})
+
+			return
+		} else if mode == "read" {
+			args := []string{}
+			if key == "" {
+				args = []string{"all"}
+			} else {
+				args = strings.Split(key, ",")
+				for i := range args {
+					// For now only public key
+					args[i] = "public|" + args[i]
+				}
+			}
+
+			rpcDo(w, client, func() error {
+				msg, err := client.CallString("ReadFromDisk", args)
+
+				if err == nil {
+					PrintJSON(w, true, msg, "")
+				}
+
+				return err
+			})
+
+			return
 		}
 
 		PrintJSON(w, false, "", "Bad request")
