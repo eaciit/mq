@@ -272,7 +272,7 @@ func main() {
 			s, e := c.Call("Get", arg)
 			handleError(e)
 
-			if e != nil {
+			if e == nil {
 				fmt.Println(location)
 				fmt.Println("Key         : ", s.Key)
 				fmt.Println("Value       : ", s.Value)
