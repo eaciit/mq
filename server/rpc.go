@@ -93,14 +93,14 @@ func (r *MqRPC) Ping(key string, result *MqMsg) error {
 	pingInfo := fmt.Sprintf("Server is running on port %s\n", strconv.Itoa(r.Config.Port))
 	pingInfo = pingInfo + fmt.Sprintf("Node \t| Address \t| Role \t Active \t\t\t| DataCount \t\t\t| DataSize \t\t\t|  MaxMemorySize\t\t\t \n")
 	for i, n := range r.nodes {
-		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %s \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
+		pingInfo = pingInfo + fmt.Sprintf("Node %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %s \t\t\t | %s \t\t\t \n", i, n.Config.Name, n.Config.Port,
 			n.Config.Role,
-			n.ActiveDuration(), n.DataCount, relevantDataSize((n.DataSize)), (n.AllocatedSize/1024/1024))
+			n.ActiveDuration(), n.DataCount, relevantDataSize((n.DataSize)), relevantDataSize((n.AllocatedSize)))
 	}
 	for i, n := range r.mirrors {
-		pingInfo = pingInfo + fmt.Sprintf("Mirror %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %s \t\t\t | %d \t\t\t \n", i, n.Config.Name, n.Config.Port,
+		pingInfo = pingInfo + fmt.Sprintf("Mirror %d \t| %s:%d \t| %s \t %v \t\t\t| %d \t\t\t| %s \t\t\t | %s \t\t\t \n", i, n.Config.Name, n.Config.Port,
 			n.Config.Role,
-			n.ActiveDuration(), n.DataCount, relevantDataSize((n.DataSize)), (n.AllocatedSize/1024/1024))
+			n.ActiveDuration(), n.DataCount, relevantDataSize((n.DataSize)), relevantDataSize((n.AllocatedSize)))
 	}
 	(*result).Value = pingInfo
 	return nil
@@ -140,9 +140,35 @@ func (r *MqRPC) Items(key string, result *MqMsg) error {
 }
 
 func (r *MqRPC) Nodes(key string, result *MqMsg) error {
-	buf, e := Encode(r.nodes)
+	nodes := r.nodes
+	nodes = append(nodes,r.mirrors...)
+	buf, e := Encode(nodes)
 	result.Value = buf.Bytes()
 	return e
+}
+
+func (r *MqRPC) GetKeys (key string, result *MqMsg) error {
+	i, _ := strconv.Atoi(key)
+	if i >= 0 && i < len(r.nodes) {
+		node := r.nodes[i]
+		keysInfo := fmt.Sprintf("Node is running on port %d\nAvailable keys: ", node.Config.Port)
+
+		for index, item := range r.dataMap {
+			if item == i {
+				keysInfo += index + ", "
+			}
+		}
+
+		(*result).Value = strings.TrimRight(keysInfo, ", ")
+		// buf, e := Encode(r.items)
+		// result.Value = buf.Bytes()
+		// return e
+	} else {
+		errorMsg := fmt.Sprintf("Couldn't found node with number %s", key)
+		return errors.New(errorMsg)
+	}
+
+	return nil
 }
 
 func (r *MqRPC) Users(key string, result *MqMsg) error {
