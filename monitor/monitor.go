@@ -259,6 +259,21 @@ func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err
 			})
 
 			return
+		} else if mode == "info"{
+			rpcDo(w, client, func() error {
+				msg, err := client.Call("Get", keyParsed)
+				location, e := client.CallString("ItemLocation", keyParsed)
+				result := fmt.Sprintf("Location : %s, Key : %s \nValue : %v, Table : %v, Owner : %v, Created : %v, Last Access : %v, Expiry : %v, Permission : %v  ",location,msg.Key,msg.Value,msg.Table,msg.Owner,msg.Created,msg.LastAccess,msg.Expiry,msg.Permission)
+				if err == nil && e == nil {
+					PrintJSON(w, true, result, "")
+				}
+
+				return err
+			})
+
+			return
+		} else if mode == "write"{
+			
 		}
 
 		PrintJSON(w, false, "", "Bad request")
