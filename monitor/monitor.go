@@ -3,16 +3,17 @@ package monitor
 import (
 	"errors"
 	"fmt"
-	. "github.com/eaciit/mq/client"
-	. "github.com/eaciit/mq/helper"
-	. "github.com/eaciit/mq/msg"
-	. "github.com/eaciit/mq/server"
 	"html/template"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	. "github.com/eaciit/mq/client"
+	. "github.com/eaciit/mq/helper"
+	. "github.com/eaciit/mq/msg"
+	. "github.com/eaciit/mq/server"
 )
 
 const (
@@ -517,20 +518,24 @@ func handleDataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, e
 		PrintJSON(w, true, make([]interface{}, 0), "")
 		return
 	} else if r.Method == "DELETE" {
-		username := strings.ToLower(r.FormValue("username"))
+		if clientInfo.Role == "admin" {
+			username := strings.ToLower(r.FormValue("username"))
 
-		if success := rpcDo(w, client, func() error {
-			_, e := client.Call("DeleteUser", MqMsg{
-				Key:   username,
-				Value: username,
-			})
+			if success := rpcDo(w, client, func() error {
+				_, e := client.Call("DeleteUser", MqMsg{
+					Key:   username,
+					Value: username,
+				})
 
-			return e
-		}); !success {
-			return
+				return e
+			}); !success {
+				return
+			}
+
+			PrintJSON(w, true, make([]interface{}, 0), "")
+		} else {
+			PrintJSON(w, false, "", "You don't have permission to delete")
 		}
-
-		PrintJSON(w, true, make([]interface{}, 0), "")
 		return
 	}
 
