@@ -30,7 +30,19 @@ Adding ```-mirror``` will run node as mirror
 Node will automatically run as mirror with master on localhost:7890
 Note : mirror port must different with master port
 
-##List client commands :
+## Running Web Monitor
+```
+go run mqmonitor.go
+```
+Automatically run web server on localhost:1234 and connecting to master node on 127.0.0.1:7890
+
+## Running Client
+```
+go run mqclient.go
+```
+Automatically run client and connecting to RPC Server.
+
+###List client commands :
 
 ```
 1.  exit
@@ -50,6 +62,13 @@ Note : mirror port must different with master port
 15. info(key)
 16. writetodisk(key1,key2,...)
 17. readfromdisk(key1,key2,...)
+```
+
+###Format key,value,nodenumber :
+```
+1.  key   -> tablename|key, ex : employees|emp1
+2.  value -> json format, ex : {"name":"nanda","role":"admin"}
+3.  nodenumber -> ex : 0
 ```
 
 ##User Management Command
@@ -101,10 +120,4 @@ updateUser(eaciit,secret,admin)
 will update password and role of existing user with username  "eaciit" to password: "secret" and role: "admin"
 Note : only admin can update existing user
 
-##Format key,value,nodenumber :
 
-```
-1.  key   -> tablename|key, ex : employees|emp1
-2.  value -> json format, ex : {"name":"nanda","role":"admin"}
-3.  nodenumber -> ex : 0
-```
