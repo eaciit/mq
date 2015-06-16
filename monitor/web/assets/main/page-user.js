@@ -1,7 +1,7 @@
 (function () {
 	'use strict';
 
-	var User = function () { 
+	var User = function () {
 		var self = this;
 		var $body = $('body');
 		var $sectionUser = $body.find('.section-user');
@@ -11,19 +11,19 @@
 
 		this.init = function () {
 			$sectionUser.find('.grid').kendoGrid({
-				dataSource: { 
-					data: [], 
+				dataSource: {
+					data: [],
 					pageSize: 10
 				},
 				pageable: {
 					pageSizes: [5, 10, 15, 20]
 				},
-				sortable: true, 
+				sortable: true,
 				scrollable: false,
 				columns: [
 					{ field: 'UserName', title: 'User Name' },
 					{ field: 'Role', title: 'Role' },
-					{ title: 'Options', width: 130, 
+					{ title: 'Options', width: 130,
 						template: '<button class="btn btn-xs btn-primary btn-row-edit"><i class="fa fa-edit"></i>&nbsp;edit</button>&nbsp;<button class="btn btn-xs btn-danger btn-row-delete"><i class="fa fa-remove"></i>&nbsp;delete</button>',
 						attributes: { style: 'text-align: center' }
 				 	}
@@ -32,7 +32,7 @@
 
 			$sectionInsert.find('[name=role]').kendoDropDownList({
 				dataSource: {
-					data: ['admin']
+					data: ['admin', 'client']
 				},
 				optionLabel: 'Select role'
 			});
@@ -64,8 +64,8 @@
 					var $userGrid = $sectionUser.find('.grid').data('kendoGrid');
 
 					$userGrid.setDataSource(new kendo.data.DataSource({
-						data: Lazy(res.data.grid).sortBy(function (d) { 
-							return d.UserName; 
+						data: Lazy(res.data.grid).sortBy(function (d) {
+							return d.UserName;
 						}).toArray(),
 						pageSize: $userGrid.dataSource.pageSize()
 					}));
@@ -175,7 +175,7 @@
 							} else if (inputs[input].length < 3) {
 								if (input === 'role')
 									continue;
-								
+
 								toastr.error(input + ' need minimum 3 character');
 								return false;
 							}
@@ -205,9 +205,9 @@
 
 				$.ajax({
 					url: 'data/users',
-					data: { 
-						username: username, 
-						password: password, 
+					data: {
+						username: username,
+						password: password,
 						role: role,
 						oldusername: (userEdit !== false ? userEdit : ''),
 						edit: (userEdit !== false)
@@ -219,7 +219,7 @@
 					setTimeout(function () {
 						$loader.hide();
 						$form.show();
-						
+
 						if (!res.success) {
 							toastr.error(res.message);
 							$form.find('[name=password]').val('');
