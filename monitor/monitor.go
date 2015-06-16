@@ -192,137 +192,7 @@ func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err
 			PrintJSON(w, false, "", "you are not logged in. login first")
 			return
 		}
-
-		mode := strings.ToLower(r.FormValue("mode"))
-		key := strings.ToLower(r.FormValue("key"))
-		value := strings.ToLower(r.FormValue("value"))
-		owner := strings.ToLower(r.FormValue("owner"))
-		table := strings.ToLower(r.FormValue("table"))
-		duration := strings.ToLower(r.FormValue("duration"))
-		permission := strings.ToLower(r.FormValue("permission"))
-		keyParsed := ""
-
-		_ = duration
-		_ = permission
-
-		if owner == "" {
-			owner = "public"
-		}
-
-		if owner != "" {
-			keyParsed = fmt.Sprintf("%s", owner)
-		}
-
-		if table != "" {
-			keyParsed = fmt.Sprintf("%s|%s", keyParsed, table)
-		}
-
-		if key != "" {
-			keyParsed = fmt.Sprintf("%s|%s", keyParsed, key)
-		}
-
-		if mode == "get" {
-			rpcDo(w, client, func() error {
-				msg, err := client.Call("Get", keyParsed)
-
-				if err == nil {
-					PrintJSON(w, true, msg.Value, "")
-				}
-
-				return err
-			})
-
-			return
-		} else if mode == "set" {
-			rpcDo(w, client, func() error {
-				_, err := client.Call("Set", MqMsg{
-					Key:   keyParsed,
-					Value: value,
-				})
-
-				if err == nil {
-					PrintJSON(w, true, keyParsed, "")
-				}
-
-				return err
-			})
-
-			return
-		} else if mode == "keys"{
-			rpcDo(w, client, func() error {
-				msg, err := client.Call("Keys", key)
-
-				if err == nil {
-					PrintJSON(w, true, msg.Value, "")
-				}
-
-				return err
-			})
-
-			return
-		} else if mode == "info"{
-			rpcDo(w, client, func() error {
-				msg, err := client.Call("Get", keyParsed)
-				location, e := client.CallString("ItemLocation", keyParsed)
-				result := fmt.Sprintf("Location : %s, Key : %s \nValue : %v, Table : %v, Owner : %v, Created : %v, Last Access : %v, Expiry : %v, Permission : %v  ",location,msg.Key,msg.Value,msg.Table,msg.Owner,msg.Created,msg.LastAccess,msg.Expiry,msg.Permission)
-				if err == nil && e == nil {
-					PrintJSON(w, true, result, "")
-				}
-
-				return err
-			})
-
-			return
-		} else if mode == "write"{
-			args := []string{}
-			if key == "" {
-				args = []string{"all"}
-			} else {
-				args = strings.Split(key, ",")
-				for i := range args {
-					// For now only public key
-					args[i] = "public|" + args[i]
-				}
-			}
-
-			rpcDo(w, client, func() error {
-				msg, err := client.CallString("WriteToDisk", args)
-
-				if err == nil {
-					PrintJSON(w, true, msg, "")
-				}
-
-				return err
-			})
-
-			return
-		} else if mode == "read" {
-			args := []string{}
-			if key == "" {
-				args = []string{"all"}
-			} else {
-				args = strings.Split(key, ",")
-				for i := range args {
-					// For now only public key
-					args[i] = "public|" + args[i]
-				}
-			}
-
-			rpcDo(w, client, func() error {
-				msg, err := client.CallString("ReadFromDisk", args)
-
-				if err == nil {
-					PrintJSON(w, true, msg, "")
-				}
-
-				return err
-			})
-
-			return
-		}
-
-		PrintJSON(w, false, "", "Bad request")
-		return
+		handleConsolePostRequest(w, r, client, err)
 	}
 }
 
@@ -654,8 +524,136 @@ func isServerAlive(w http.ResponseWriter, r *http.Request, client *MqClient) boo
 	return true
 }
 
-func handleConsolePostRequest(){
+func handleConsolePostRequest(w http.ResponseWriter, r *http.Request, client *MqClient, err error){
+	mode := strings.ToLower(r.FormValue("mode"))
+	key := strings.ToLower(r.FormValue("key"))
+	value := strings.ToLower(r.FormValue("value"))
+	owner := strings.ToLower(r.FormValue("owner"))
+	table := strings.ToLower(r.FormValue("table"))
+	duration := strings.ToLower(r.FormValue("duration"))
+	permission := strings.ToLower(r.FormValue("permission"))
+	keyParsed := ""
 
+	_ = duration
+	_ = permission
+
+	if owner == "" {
+		owner = "public"
+	}
+
+	if owner != "" {
+		keyParsed = fmt.Sprintf("%s", owner)
+	}
+
+	if table != "" {
+		keyParsed = fmt.Sprintf("%s|%s", keyParsed, table)
+	}
+
+	if key != "" {
+		keyParsed = fmt.Sprintf("%s|%s", keyParsed, key)
+	}
+
+	if mode == "get" {
+		rpcDo(w, client, func() error {
+			msg, err := client.Call("Get", keyParsed)
+
+			if err == nil {
+				PrintJSON(w, true, msg.Value, "")
+			}
+
+			return err
+		})
+
+		return
+	} else if mode == "set" {
+		rpcDo(w, client, func() error {
+			_, err := client.Call("Set", MqMsg{
+				Key:   keyParsed,
+				Value: value,
+			})
+
+			if err == nil {
+				PrintJSON(w, true, keyParsed, "")
+			}
+
+			return err
+		})
+
+		return
+	} else if mode == "keys"{
+		rpcDo(w, client, func() error {
+			msg, err := client.Call("Keys", key)
+
+			if err == nil {
+				PrintJSON(w, true, msg.Value, "")
+			}
+
+			return err
+		})
+
+		return
+	} else if mode == "info"{
+		rpcDo(w, client, func() error {
+			msg, err := client.Call("Get", keyParsed)
+			location, e := client.CallString("ItemLocation", keyParsed)
+			result := fmt.Sprintf("Location : %s, Key : %s \nValue : %v, Table : %v, Owner : %v, Created : %v, Last Access : %v, Expiry : %v, Permission : %v  ",location,msg.Key,msg.Value,msg.Table,msg.Owner,msg.Created,msg.LastAccess,msg.Expiry,msg.Permission)
+			if err == nil && e == nil {
+				PrintJSON(w, true, result, "")
+			}
+
+			return err
+		})
+
+		return
+	} else if mode == "write"{
+		args := []string{}
+		if key == "" {
+			args = []string{"all"}
+		} else {
+			args = strings.Split(key, ",")
+			for i := range args {
+				// For now only public key
+				args[i] = "public|" + args[i]
+			}
+		}
+
+		rpcDo(w, client, func() error {
+			msg, err := client.CallString("WriteToDisk", args)
+
+			if err == nil {
+				PrintJSON(w, true, msg, "")
+			}
+
+			return err
+		})
+
+		return
+	} else if mode == "read" {
+		args := []string{}
+		if key == "" {
+			args = []string{"all"}
+		} else {
+			args = strings.Split(key, ",")
+			for i := range args {
+				// For now only public key
+				args[i] = "public|" + args[i]
+			}
+		}
+
+		rpcDo(w, client, func() error {
+			msg, err := client.CallString("ReadFromDisk", args)
+
+			if err == nil {
+				PrintJSON(w, true, msg, "")
+			}
+
+			return err
+		})
+
+		return
+	}
+	PrintJSON(w, false, "", "Bad request")
+	return
 }
 
 func StartHTTP(serverHost string, port int) {
