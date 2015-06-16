@@ -247,6 +247,18 @@ func handleConsole(w http.ResponseWriter, r *http.Request, client *MqClient, err
 			})
 
 			return
+		} else if mode == "keys"{
+			rpcDo(w, client, func() error {
+				msg, err := client.Call("Keys", key)
+
+				if err == nil {
+					PrintJSON(w, true, msg.Value, "")
+				}
+
+				return err
+			})
+
+			return
 		}
 
 		PrintJSON(w, false, "", "Bad request")
@@ -576,6 +588,10 @@ func isServerAlive(w http.ResponseWriter, r *http.Request, client *MqClient) boo
 	}
 
 	return true
+}
+
+func handleConsolePostRequest(){
+
 }
 
 func StartHTTP(serverHost string, port int) {
