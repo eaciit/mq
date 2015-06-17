@@ -429,7 +429,7 @@ func handleDataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, e
 		role := strings.ToLower(r.FormValue("role"))
 		isEdit := strings.ToLower(r.FormValue("edit"))
 
-		if isEdit == "true" {
+		if isEdit == "true" && (clientInfo.Username == username || clientInfo.Role == "admin") {
 			if success := rpcDo(w, client, func() error {
 				_, e := client.Call("ChangePassword", MqMsg{
 					Key:   oldUsername,
@@ -443,16 +443,19 @@ func handleDataUsers(w http.ResponseWriter, r *http.Request, client *MqClient, e
 
 			PrintJSON(w, true, make([]interface{}, 0), "")
 			return
-		}
+		} else if clientInfo.Role == "admin" {
+			if success := rpcDo(w, client, func() error {
+				_, e := client.Call("AddUser", MqMsg{
+					Key:   fmt.Sprintf("%s|%s", username, role),
+					Value: password,
+				})
 
-		if success := rpcDo(w, client, func() error {
-			_, e := client.Call("AddUser", MqMsg{
-				Key:   fmt.Sprintf("%s|%s", username, role),
-				Value: password,
-			})
-
-			return e
-		}); !success {
+				return e
+			}); !success {
+				PrintJSON(w, false, "", "You don't have permission to do this action")
+				return
+			}
+		} else {
 			return
 		}
 
@@ -524,7 +527,7 @@ func isServerAlive(w http.ResponseWriter, r *http.Request, client *MqClient) boo
 	return true
 }
 
-func handleConsolePostRequest(w http.ResponseWriter, r *http.Request, client *MqClient, err error){
+func handleConsolePostRequest(w http.ResponseWriter, r *http.Request, client *MqClient, err error) {
 	mode := strings.ToLower(r.FormValue("mode"))
 	key := strings.ToLower(r.FormValue("key"))
 	value := strings.ToLower(r.FormValue("value"))
@@ -580,7 +583,7 @@ func handleConsolePostRequest(w http.ResponseWriter, r *http.Request, client *Mq
 		})
 
 		return
-	} else if mode == "keys"{
+	} else if mode == "keys" {
 		rpcDo(w, client, func() error {
 			msg, err := client.Call("Keys", key)
 
@@ -592,11 +595,11 @@ func handleConsolePostRequest(w http.ResponseWriter, r *http.Request, client *Mq
 		})
 
 		return
-	} else if mode == "info"{
+	} else if mode == "info" {
 		rpcDo(w, client, func() error {
 			msg, err := client.Call("Get", keyParsed)
 			location, e := client.CallString("ItemLocation", keyParsed)
-			result := fmt.Sprintf("Location : %s, Key : %s \nValue : %v, Table : %v, Owner : %v, Created : %v, Last Access : %v, Expiry : %v, Permission : %v  ",location,msg.Key,msg.Value,msg.Table,msg.Owner,msg.Created,msg.LastAccess,msg.Expiry,msg.Permission)
+			result := fmt.Sprintf("Location : %s, Key : %s \nValue : %v, Table : %v, Owner : %v, Created : %v, Last Access : %v, Expiry : %v, Permission : %v  ", location, msg.Key, msg.Value, msg.Table, msg.Owner, msg.Created, msg.LastAccess, msg.Expiry, msg.Permission)
 			if err == nil && e == nil {
 				PrintJSON(w, true, result, "")
 			}
@@ -605,7 +608,7 @@ func handleConsolePostRequest(w http.ResponseWriter, r *http.Request, client *Mq
 		})
 
 		return
-	} else if mode == "write"{
+	} else if mode == "write" {
 		args := []string{}
 		if key == "" {
 			args = []string{"all"}
