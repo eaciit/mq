@@ -87,7 +87,6 @@
 				var uid = $(this).closest('tr[data-uid]').attr('data-uid');
 				var data = $sectionUser.find('.k-grid').data('kendoGrid').dataSource.data();
 				var rowData = Lazy(data).find(function (d) { return d.uid === uid; });
-				rowData.Role = 'admin';
 
 				$sectionUser.find('.btn-add').trigger('click');
 
