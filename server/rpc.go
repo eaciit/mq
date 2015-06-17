@@ -147,29 +147,6 @@ func (r *MqRPC) Nodes(key string, result *MqMsg) error {
 	return e
 }
 
-func (r *MqRPC) GetKeys (key string, result *MqMsg) error {
-	i, _ := strconv.Atoi(key)
-	if i >= 0 && i < len(r.nodes) {
-		node := r.nodes[i]
-		keysInfo := fmt.Sprintf("Node is running on port %d\nAvailable keys: ", node.Config.Port)
-
-		for index, item := range r.dataMap {
-			if item == i {
-				keysInfo += index + ", "
-			}
-		}
-
-		(*result).Value = strings.TrimRight(keysInfo, ", ")
-		// buf, e := Encode(r.items)
-		// result.Value = buf.Bytes()
-		// return e
-	} else {
-		errorMsg := fmt.Sprintf("Couldn't found node with number %s", key)
-		return errors.New(errorMsg)
-	}
-
-	return nil
-}
 
 func (r *MqRPC) Users(key string, result *MqMsg) error {
 	buf, e := Encode(r.users)
