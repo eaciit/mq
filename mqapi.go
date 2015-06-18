@@ -13,8 +13,8 @@ import (
 )
 
 type TokenData struct {
-	Token string    `json:"token"`
-	Valid time.Time `json:"valid"`
+	Token string
+	Valid time.Time
 }
 
 const (
@@ -22,8 +22,13 @@ const (
 )
 
 func main() {
+	client, _ := NewMqClient("127.0.0.1:7890", time.Second*10)
+
 	m := martini.Classic()
 	m.Get("/api/gettoken/username=(?P<name>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", GetToken)
+	m.Get("/api/get/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, params martini.Params) {
+		Get(w, params, client)
+	})
 	m.RunOnAddr(":8090")
 }
 
@@ -39,6 +44,15 @@ func GetToken(w http.ResponseWriter, params martini.Params) string {
 		PrintJSON(w, false, "", "wrong username and password combination")
 	}
 	return result
+}
+
+func Get(w http.ResponseWriter, params martini.Params, c *MqClient) {
+	result, err := c.Call("Get", "public|"+params["key"])
+	if err != nil {
+		PrintJSON(w, false, "", err.Error())
+	} else {
+		PrintJSON(w, true, result, "")
+	}
 }
 
 func Auth(username, password string) (bool, error) {
