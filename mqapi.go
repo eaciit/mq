@@ -50,7 +50,7 @@ func main() {
 
 	m := martini.Classic()
 	m.Post("/api/gettoken/username=(?P<username>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", GetToken)
-	m.Post("/api/checktoken/tokenkey=(?P<tokenkey>[a-zA-Z0-9=]+)", CheckToken)
+	m.Post("/api/checktoken/token=(?P<tokenkey>[a-zA-Z0-9=_-]+)", CheckToken)
 	m.Get("/api/get/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, params martini.Params) {
 		Get(w, params, client)
 	})
@@ -65,7 +65,7 @@ func CheckToken(w http.ResponseWriter, params martini.Params) {
 	data := TokenData{}
 	isTokenExist := false
 	for _, v := range users {
-		if params["tokenkey"] == v.Token {
+		if params["tokenkey"] == v.Token && !CheckExpiredToken(v.Valid) {
 			isTokenExist = true
 			data.Token = v.Token
 			data.Valid = v.Valid
@@ -90,7 +90,7 @@ func GetToken(w http.ResponseWriter, params martini.Params) {
 		user.Token = token
 		user.Valid = valid
 		if CheckExistedUser(username, valid) {
-			if CheckExpiredToken(user) {
+			if CheckExpiredToken(user.Valid) {
 				user.Token = token
 				user.Valid = valid
 				UpdateTokenAndValidTime(user)
@@ -130,8 +130,8 @@ func CheckExistedUser(username string, valid time.Time) bool {
 	return isExist
 }
 
-func CheckExpiredToken(usr User) bool {
-	return usr.Valid.Before(time.Now())
+func CheckExpiredToken(valid time.Time) bool {
+	return valid.Before(time.Now())
 }
 
 func Get(w http.ResponseWriter, params martini.Params, c *MqClient) {
