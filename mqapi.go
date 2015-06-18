@@ -49,7 +49,9 @@ func main() {
 	client, _ := NewMqClient(*serverHost, time.Second*10)
 
 	m := martini.Classic()
-	m.Post("/api/gettoken/username=(?P<username>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", GetToken)
+	m.Post("/api/gettoken/username=(?P<username>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", func(w http.ResponseWriter, params martini.Params) {
+		GetToken(w, params, client)
+	})
 	m.Post("/api/checktoken/token=(?P<token>[a-zA-Z0-9=_-]+)", CheckToken)
 	m.Get("/api/get/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, params martini.Params) {
 		Get(w, params, client)
@@ -79,10 +81,10 @@ func CheckToken(w http.ResponseWriter, params martini.Params) {
 
 }
 
-func GetToken(w http.ResponseWriter, params martini.Params) {
+func GetToken(w http.ResponseWriter, params martini.Params, c *MqClient) {
 	username := params["username"]
 	password := params["password"]
-	auth, e := Auth(username, password)
+	auth, e := Auth(username, password, c)
 	if auth && e == nil {
 		token := GenerateRandomString(tokenLength)
 		valid := time.Now().Add(expiredTime * time.Minute)
@@ -157,8 +159,7 @@ func Put(w http.ResponseWriter, r *http.Request, params martini.Params, c *MqCli
 	}
 }
 
-func Auth(username, password string) (bool, error) {
-	c, _ := NewMqClient("127.0.0.1:7890", time.Second*10)
+func Auth(username, password string, c *MqClient) (bool, error) {
 	isLoggedIn := false
 	msg := MqMsg{Key: username, Value: password}
 	i, e := c.CallToLogin(msg)
