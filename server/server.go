@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/gob"
-	//"fmt"
 	"net"
 	"net/rpc"
 	"strconv"

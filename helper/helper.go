@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+type Pair struct {
+	First, Second interface{}
+}
+
 func Decode(bytesData []byte, result interface{}) error {
 	buf := bytes.NewBuffer(bytesData)
 	dec := gob.NewDecoder(buf)
@@ -82,6 +86,6 @@ func AsString(val interface{}) string {
 	return fmt.Sprintf("%v", val)
 }
 
-func FloatToString(val interface{}) string{
-	return fmt.Sprintf("%.2f",val)
+func FloatToString(val interface{}) string {
+	return fmt.Sprintf("%.2f", val)
 }

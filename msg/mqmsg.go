@@ -18,6 +18,7 @@ type MqMsg struct {
 	Duration   int64
 	Table      string
 	Permission string
+	Size       int64
 }
 
 func (msg *MqMsg) SetDefaults(m *MqMsg) {
@@ -41,7 +42,7 @@ func (msg *MqMsg) SetDefaults(m *MqMsg) {
 	}
 }
 
-func (msg *MqMsg) BuildKey(owner string, table string, key string) string {
+func BuildKey(owner string, table string, key string) string {
 	genKey := ""
 	if strings.TrimSpace(owner) != "" {
 		genKey = strings.TrimSpace(owner) + "|"

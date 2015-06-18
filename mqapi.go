@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/base64"
+	"flag"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
@@ -13,8 +15,14 @@ import (
 )
 
 type TokenData struct {
-	Token string    `json:"token"`
-	Valid time.Time `json:"valid"`
+	Token string
+	Valid time.Time
+}
+
+type PutData struct {
+	Node        int
+	Owner       string
+	Valid, Size int64
 }
 
 const (
@@ -22,9 +30,22 @@ const (
 )
 
 func main() {
+	port := flag.Int("port", 8090, "Port of RCP call. Default is 1234")
+	serverHost := flag.String("master", "127.0.0.1:7890", "Default master host")
+	flag.Parse()
+
+	client, _ := NewMqClient(*serverHost, time.Second*10)
+
 	m := martini.Classic()
 	m.Get("/api/gettoken/username=(?P<name>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", GetToken)
-	m.RunOnAddr(":8090")
+	m.Get("/api/get/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, params martini.Params) {
+		Get(w, params, client)
+	})
+	m.Post("/api/put/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, r *http.Request, params martini.Params) {
+		Put(w, r, params, client)
+	})
+
+	m.RunOnAddr(fmt.Sprint(":", *port))
 }
 
 func GetToken(w http.ResponseWriter, params martini.Params) string {
@@ -39,6 +60,29 @@ func GetToken(w http.ResponseWriter, params martini.Params) string {
 		PrintJSON(w, false, "", "wrong username and password combination")
 	}
 	return result
+}
+
+func Get(w http.ResponseWriter, params martini.Params, c *MqClient) {
+	result, err := c.Call("Get", "public|"+params["key"])
+	if err != nil {
+		PrintJSON(w, false, "", err.Error())
+	} else {
+		PrintJSON(w, true, result, "")
+	}
+}
+
+func Put(w http.ResponseWriter, r *http.Request, params martini.Params, c *MqClient) {
+	key := BuildKey("", "", params["key"])
+	arg := MqMsg{Key: key, Value: r.FormValue("value")}
+
+	item, err := c.Call("Set", arg)
+
+	if err != nil {
+		PrintJSON(w, false, "", err.Error())
+	} else {
+		result := PutData{Owner: item.Owner, Size: item.Size, Valid: item.Duration}
+		PrintJSON(w, true, result, "")
+	}
 }
 
 func Auth(username, password string) (bool, error) {
