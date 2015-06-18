@@ -2,22 +2,19 @@ package main
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"math/rand"
+	"net/http"
 	"time"
 
 	. "github.com/eaciit/mq/client"
+	. "github.com/eaciit/mq/helper"
 	. "github.com/eaciit/mq/msg"
 	"github.com/go-martini/martini"
 )
 
 type TokenData struct {
-	Data struct {
-		Token string    `json:"token"`
-		Valid time.Time `json:"valid"`
-	} `json:"data"`
-	Result  string `json:"result"`
-	Message string `json:"message"`
+	Token string    `json:"token"`
+	Valid time.Time `json:"valid"`
 }
 
 const (
@@ -30,13 +27,16 @@ func main() {
 	m.RunOnAddr(":8090")
 }
 
-func GetToken(params martini.Params) string {
+func GetToken(w http.ResponseWriter, params martini.Params) string {
 	var result string
 	auth, e := Auth(params["name"], params["password"])
 	if auth && e == nil {
-		result, _ = ResultValue("", true)
+		data := TokenData{}
+		data.Token = GenerateRandomString(tokenLength)
+		data.Valid = time.Now().Add(15 * time.Minute)
+		PrintJSON(w, true, data, "")
 	} else {
-		result, _ = ResultValue("Not authenticated user", false)
+		PrintJSON(w, false, "", "wrong username and password combination")
 	}
 	return result
 }
@@ -44,57 +44,30 @@ func GetToken(params martini.Params) string {
 func Auth(username, password string) (bool, error) {
 	c, _ := NewMqClient("127.0.0.1:7890", time.Second*10)
 	isLoggedIn := false
-	// ActiveUser := ClientInfo{}
-	// Role := ""
 	msg := MqMsg{Key: username, Value: password}
 	i, e := c.CallToLogin(msg)
 	if e != nil {
 		return false, e
 	}
-	// fmt.Println(i)
+
 	if i.Value.(ClientInfo).IsLoggedIn {
 		isLoggedIn = true
-		// Role = i.Value.(ClientInfo).Role
-		// ActiveUser = i.Value.(ClientInfo)
 	}
 	return isLoggedIn, nil
 }
-func ResultValue(message string, isAuthSuccess bool) (string, error) {
-	token, _ := GenerateRandomString(tokenLength)
-	now := time.Now()
-	then := now.Add(10 * time.Minute)
-	result := new(TokenData)
-	if isAuthSuccess {
-		result.Result = "OK"
-		result.Message = ""
-		result.Data.Token = token
-		result.Data.Valid = then
-	} else {
-		result.Result = "error"
-		result.Message = message
-		result.Data.Token = ""
-		result.Data.Valid = now
-	}
 
-	b, err := json.Marshal(result)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
-func GenerateRandomBytes(n int) ([]byte, error) {
+func GenerateRandomBytes(n int) []byte {
 	b := make([]byte, n)
 	for i := 0; i < n; i++ {
 		b[i] = byte(randInt(0, 100))
 	}
-	return b, nil
+	return b
 }
 
-func GenerateRandomString(s int) (string, error) {
+func GenerateRandomString(s int) string {
 	rand.Seed(time.Now().UTC().UnixNano())
-	b, err := GenerateRandomBytes(s)
-	return base64.URLEncoding.EncodeToString(b), err
+	b := GenerateRandomBytes(s)
+	return base64.URLEncoding.EncodeToString(b)
 }
 
 func randInt(min int, max int) int {
