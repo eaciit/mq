@@ -50,7 +50,7 @@ func main() {
 
 	m := martini.Classic()
 	m.Post("/api/gettoken/username=(?P<username>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", GetToken)
-	m.Post("/api/checktoken/token=(?P<tokenkey>[a-zA-Z0-9=_-]+)", CheckToken)
+	m.Post("/api/checktoken/token=(?P<token>[a-zA-Z0-9=_-]+)", CheckToken)
 	m.Get("/api/get/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, params martini.Params) {
 		Get(w, params, client)
 	})
@@ -65,7 +65,7 @@ func CheckToken(w http.ResponseWriter, params martini.Params) {
 	data := TokenData{}
 	isTokenExist := false
 	for _, v := range users {
-		if params["tokenkey"] == v.Token && !CheckExpiredToken(v.Valid) {
+		if params["token"] == v.Token && !CheckExpiredToken(v.Valid) {
 			isTokenExist = true
 			data.Token = v.Token
 			data.Valid = v.Valid
