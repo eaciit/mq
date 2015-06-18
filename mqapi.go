@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/base64"
+	"flag"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
@@ -22,14 +24,18 @@ const (
 )
 
 func main() {
-	client, _ := NewMqClient("127.0.0.1:7890", time.Second*10)
+	port := flag.Int("port", 8090, "Port of RCP call. Default is 1234")
+	serverHost := flag.String("master", "127.0.0.1:7890", "Default master host")
+	flag.Parse()
+
+	client, _ := NewMqClient(*serverHost, time.Second*10)
 
 	m := martini.Classic()
 	m.Get("/api/gettoken/username=(?P<name>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", GetToken)
 	m.Get("/api/get/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, params martini.Params) {
 		Get(w, params, client)
 	})
-	m.RunOnAddr(":8090")
+	m.RunOnAddr(fmt.Sprint(":", *port))
 }
 
 func GetToken(w http.ResponseWriter, params martini.Params) string {
