@@ -141,12 +141,11 @@ func (r *MqRPC) Items(key string, result *MqMsg) error {
 
 func (r *MqRPC) Nodes(key string, result *MqMsg) error {
 	nodes := r.nodes
-	nodes = append(nodes,r.mirrors...)
+	nodes = append(nodes, r.mirrors...)
 	buf, e := Encode(nodes)
 	result.Value = buf.Bytes()
 	return e
 }
-
 
 func (r *MqRPC) Users(key string, result *MqMsg) error {
 	buf, e := Encode(r.users)
@@ -804,14 +803,14 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 		msg.Key = value.Key
 	}
 	msg.Value = value.Value
-
 	buf, _ := Encode(msg.Value)
+	msg.Size = int64(buf.Len())
 
 	// Search for available node
 	idxmasuk := make(map[int]int)
 	counteridx := 1
 	for j := 0; j < len(r.nodes); j++ {
-		if r.nodes[j].DataSize+int64(buf.Len()) < r.nodes[j].AllocatedSize {
+		if r.nodes[j].DataSize+msg.Size < r.nodes[j].AllocatedSize {
 			idxmasuk[j] = j
 			counteridx++
 		}
@@ -840,8 +839,7 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 		for key, mirror := range r.mirrors {
 			r.mirrors[key].DataCount += 1
 			// set data size to byte size
-			r.mirrors[key].DataSize += int64(buf.Len())
-			// r.mirrors[key].DataSize += int64(buf.Len()) / 1024 / 1024
+			r.mirrors[key].DataSize += msg.Size
 
 			client, e := NewMqClient(fmt.Sprintf("%s:%d", mirror.Config.Name, mirror.Config.Port), 10*time.Second)
 			if e != nil {
@@ -859,7 +857,7 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 			fmt.Printf("Data has been mirrored to Address: %s:%d, Size: %d DataCount: %d\n", mirror.Config.Name, mirror.Config.Port, r.mirrors[key].DataSize, r.mirrors[key].DataCount)
 		}
 
-		if r.nodes[idx].AllocatedSize > (r.nodes[idx].DataSize + int64(buf.Len())) {
+		if r.nodes[idx].AllocatedSize > (r.nodes[idx].DataSize + msg.Size) {
 			r.nodes[idx].DataCount += 1
 			// set data size to byte size
 			r.nodes[idx].DataSize += int64(buf.Len())
