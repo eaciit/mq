@@ -26,17 +26,19 @@ const (
 
 func main() {
   m := martini.Classic()
-  m.Get("/api/gettoken/username=(?P<name>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", func(params martini.Params) string {
-    var result string
-    auth,e := Auth(params["name"],params["password"])
-    if auth && e == nil {
-      result,_ = ResultValue("",true)
-    }else{
-      result,_ = ResultValue("Register first :D",false)
-    }
-    return result
-  })
+  m.Get("/api/gettoken/username=(?P<name>[a-zA-Z0-9]+)&password=(?P<password>[a-zA-Z0-9]+)", GetToken)
   m.RunOnAddr(":8090")
+}
+
+func GetToken(params martini.Params) string{
+  var result string
+  auth,e := Auth(params["name"],params["password"])
+  if auth && e == nil {
+    result,_ = ResultValue("",true)
+  }else{
+    result,_ = ResultValue("Not authenticated user",false)
+  }
+  return result
 }
 
 func Auth(username, password string) (bool, error)  {
