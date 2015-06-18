@@ -111,7 +111,7 @@ func main() {
 		} else if lowerCommand == "set" {
 			_, data := parseSetCommand(command)
 			//owner := c.ClientInfo.Username
-			keygenerate := data.BuildKey(data.Owner, data.Table, data.Key)
+			keygenerate := BuildKey(data.Owner, data.Table, data.Key)
 			value := data.Value
 			if data.Value == nil {
 				value = " "
@@ -125,8 +125,7 @@ func main() {
 		} else if lowerCommand == "inc" {
 			Orikey, incVal := parseIncCommand(command)
 			//owner := c.ClientInfo.Username
-			m := MqMsg{}
-			keygenerate := m.BuildKey("public", "", Orikey)
+			keygenerate := BuildKey("public", "", Orikey)
 			//keygenerate := m.BuildKey(owner, "", Orikey)
 			msg, e := c.Call("Get", keygenerate)
 			if e != nil {
