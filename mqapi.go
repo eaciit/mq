@@ -19,6 +19,12 @@ type TokenData struct {
 	Valid time.Time
 }
 
+type PutData struct {
+	Node        int
+	Owner       string
+	Valid, Size int64
+}
+
 const (
 	tokenLength = 32
 )
@@ -35,6 +41,10 @@ func main() {
 	m.Get("/api/get/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, params martini.Params) {
 		Get(w, params, client)
 	})
+	m.Post("/api/put/token=(?P<token>[a-zA-Z0-9]+)&key=(?P<key>[a-zA-Z0-9]+)", func(w http.ResponseWriter, r *http.Request, params martini.Params) {
+		Put(w, r, params, client)
+	})
+
 	m.RunOnAddr(fmt.Sprint(":", *port))
 }
 
@@ -57,6 +67,20 @@ func Get(w http.ResponseWriter, params martini.Params, c *MqClient) {
 	if err != nil {
 		PrintJSON(w, false, "", err.Error())
 	} else {
+		PrintJSON(w, true, result, "")
+	}
+}
+
+func Put(w http.ResponseWriter, r *http.Request, params martini.Params, c *MqClient) {
+	key := BuildKey("", "", params["key"])
+	arg := MqMsg{Key: key, Value: r.FormValue("value")}
+
+	item, err := c.Call("Set", arg)
+
+	if err != nil {
+		PrintJSON(w, false, "", err.Error())
+	} else {
+		result := PutData{Owner: item.Owner, Size: item.Size, Valid: item.Duration}
 		PrintJSON(w, true, result, "")
 	}
 }

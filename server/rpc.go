@@ -30,10 +30,6 @@ var (
 	isServerIdle    bool = false
 )
 
-type Pair struct {
-	First, Second interface{}
-}
-
 type Node struct {
 	Config    *ServerConfig
 	DataCount int64
@@ -861,7 +857,6 @@ func (r *MqRPC) Set(value MqMsg, result *MqMsg) error {
 			r.nodes[idx].DataCount += 1
 			// set data size to byte size
 			r.nodes[idx].DataSize += int64(buf.Len())
-			// r.nodes[idx].DataSize += int64(buf.Len()) / 1024 / 1024
 
 			fmt.Println("Data has been set to node, ", "Address : ", r.nodes[idx].Config.Name, " Port : ", r.nodes[idx].Config.Port, " Size : ", r.nodes[idx].DataSize, " DataCount : ", r.nodes[idx].DataCount)
 			msg.LastAccess = time.Now()
