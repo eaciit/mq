@@ -72,3 +72,68 @@ Command | Action
 2.  value -> json format, ex : {"name":"eaciit","role":"admin"}
 3.  nodenumber -> ex : 0
 ```
+
+##API
+
+Protocol | URI | Action
+--- | --- | ---
+POST | `/api/gettoken/username={username}&password={password}` | Return token and valid time with given username and password
+GET | `/api/checktoken/token={token}` |  Return token and time with given token
+GET | `/api/get/token={token}&key={key}` | Return item with given key
+POST | `/api/put/token={token}&key={key}` | Set item with given key + form value and return item info
+
+###Get
+
+####Example
+
+Given Parameter
+
+`http://localhost:8090/api/put/token=I14jVFA5UFw6LBlRWlswBGA-Lwc7DxhbO1VJNTshKRU=&key=eat`
+
+Return Data
+
+```
+{
+  "message": "",
+  "data": {
+    "Created": "0001-01-01T00:00:00Z",
+    "Duration": 0,
+    "Expiry": 0,
+    "Key": "public|eat",
+    "Owner": "public",
+    "Permission": "666",
+    "Size": 8,
+    "LastAccess": "2015-06-19T10:26:05.78013317+07:00",
+    "Table": "",
+    "Value": "sushi"
+  },
+  "success": true
+}
+```
+
+###Put
+
+####Example
+
+Given Parameter
+
+`http://localhost:8090/api/put/token=I14jVFA5UFw6LBlRWlswBGA-Lwc7DxhbO1VJNTshKRU=&key=eat`
+
+With FormData
+
+`"value" = "sushi"`
+
+Return Data
+
+```
+{
+  "message": "",
+  "data": {
+    "Node": 0,
+    "Owner": "public",
+    "Size": 8,
+    "Valid": 0
+  },
+  "success": true
+}
+```
