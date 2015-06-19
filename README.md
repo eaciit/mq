@@ -137,3 +137,46 @@ Return Data
   "success": true
 }
 ```
+
+###Get Token
+
+####Example
+
+Given Parameter
+
+`http://localhost:8090/api/gettoken/username=set&password=rahasia`
+
+Return Data
+
+```
+{
+    "data": {
+        "Token": "DDVFEhQhB1ZOJ0cbGQdbCRseOz4IXU4gOUYUGkIkNSU=",
+        "Valid": "2015-06-19T11:21:36.566005061+07:00"
+    },
+    "message": "",
+    "success": true
+}
+```
+
+###Check Token
+
+####Example
+
+Given Parameter
+
+`http://localhost:8090/api/checktoken/token=DDVFEhQhB1ZOJ0cbGQdbCRseOz4IXU4gOUYUGkIkNSU=`
+
+Return Data
+
+```
+{
+    "data": {
+        "Token": "DDVFEhQhB1ZOJ0cbGQdbCRseOz4IXU4gOUYUGkIkNSU=",
+        "Valid": "2015-06-19T11:25:52.788241816+07:00"
+    },
+    "message": "",
+    "success": true
+}
+```
+
