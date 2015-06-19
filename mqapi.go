@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -67,7 +68,7 @@ func CheckToken(w http.ResponseWriter, params martini.Params) {
 	data := TokenData{}
 	isTokenExist := false
 	for _, v := range users {
-		if params["token"] == v.Token && !CheckExpiredToken(v.Valid) {
+		if params["token"] == v.Token && !isTimeExpired(v.Valid) {
 			isTokenExist = true
 			data.Token = v.Token
 			data.Valid = v.Valid
@@ -92,7 +93,7 @@ func GetToken(w http.ResponseWriter, params martini.Params, c *MqClient) {
 		user.Token = token
 		user.Valid = valid
 		if CheckExistedUser(username, valid) {
-			if CheckExpiredToken(user.Valid) {
+			if isTimeExpired(user.Valid) {
 				user.Token = token
 				user.Valid = valid
 				UpdateTokenAndValidTime(user)
@@ -132,30 +133,54 @@ func CheckExistedUser(username string, valid time.Time) bool {
 	return isExist
 }
 
-func CheckExpiredToken(valid time.Time) bool {
+func isTimeExpired(valid time.Time) bool {
 	return valid.Before(time.Now())
 }
 
+func checkTokenValidity(token string) error {
+	for _, u := range users {
+		if u.Token == token {
+			if isTimeExpired(u.Valid) {
+				return errors.New("TOKEN NOT VALID: Token already expired request new token.")
+			} else {
+				return nil
+			}
+		}
+	}
+
+	return errors.New("TOKEN NOT VALID: Token not found.")
+}
+
 func Get(w http.ResponseWriter, params martini.Params, c *MqClient) {
-	result, err := c.Call("Get", "public|"+params["key"])
-	if err != nil {
-		PrintJSON(w, false, "", err.Error())
+	e := checkTokenValidity(params["token"])
+	if e != nil {
+		PrintJSON(w, false, "", e.Error())
 	} else {
-		PrintJSON(w, true, result, "")
+		result, err := c.Call("Get", "public|"+params["key"])
+		if err != nil {
+			PrintJSON(w, false, "", err.Error())
+		} else {
+			PrintJSON(w, true, result, "")
+		}
 	}
 }
 
 func Put(w http.ResponseWriter, r *http.Request, params martini.Params, c *MqClient) {
-	key := BuildKey("", "", params["key"])
-	arg := MqMsg{Key: key, Value: r.FormValue("value")}
-
-	item, err := c.Call("Set", arg)
-
-	if err != nil {
-		PrintJSON(w, false, "", err.Error())
+	e := checkTokenValidity(params["token"])
+	if e != nil {
+		PrintJSON(w, false, "", e.Error())
 	} else {
-		result := PutData{Owner: item.Owner, Size: item.Size, Valid: item.Duration}
-		PrintJSON(w, true, result, "")
+		key := BuildKey("", "", params["key"])
+		arg := MqMsg{Key: key, Value: r.FormValue("value")}
+
+		item, err := c.Call("Set", arg)
+
+		if err != nil {
+			PrintJSON(w, false, "", err.Error())
+		} else {
+			result := PutData{Owner: item.Owner, Size: item.Size, Valid: item.Duration}
+			PrintJSON(w, true, result, "")
+		}
 	}
 }
 
