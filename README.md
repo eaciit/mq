@@ -88,7 +88,7 @@ POST | `/api/put/token={token}&key={key}` | Set item with given key + form value
 
 Given Parameter
 
-`http://localhost:8090/api/put/token=I14jVFA5UFw6LBlRWlswBGA-Lwc7DxhbO1VJNTshKRU=&key=eat`
+`http://localhost:8090/api/get/token=I14jVFA5UFw6LBlRWlswBGA-Lwc7DxhbO1VJNTshKRU=&key=eat`
 
 Return Data
 
