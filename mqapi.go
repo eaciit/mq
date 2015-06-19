@@ -80,8 +80,8 @@ func GetToken(w http.ResponseWriter, params martini.Params, c *MqClient) {
 		if foundIndex >= 0 {
 			if isTimeExpired(users[foundIndex].Valid) {
 				users[foundIndex].Token = GenerateRandomString(tokenLength)
-				users[foundIndex].Valid = time.Now().Add(expiredTime * time.Minute)
 			}
+			users[foundIndex].Valid = time.Now().Add(expiredTime * time.Minute)
 			data.Token = users[foundIndex].Token
 			data.Valid = users[foundIndex].Valid
 		} else {
